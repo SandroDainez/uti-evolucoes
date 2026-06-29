@@ -938,9 +938,27 @@
   .ex-atb-row .ex-inp { font-size: 11px; padding: 5px 7px; }
   .ex-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface2); flex-wrap: wrap; }
   .ex-foot-info { font-size: 11px; color: var(--text2); }
-  .ex-skiplink { font-size: 9px; color: var(--text3); cursor: pointer; margin-left: auto; padding: 1px 6px; border: 1px solid var(--border); border-radius: 8px; user-select: none; }
-  .ex-skiplink:hover { color: var(--text); border-color: var(--text3); }
+  .ex-skiplink { font-size: 11px; font-weight: 600; color: var(--text2); cursor: pointer; margin-left: auto; padding: 3px 10px; border: 1px solid var(--text3); border-radius: 8px; user-select: none; white-space: nowrap; }
+  .ex-skiplink:hover { color: var(--warn); border-color: var(--warn); background: rgba(255,170,0,.08); }
   .ex-field.ex-skipped { opacity: .45; }
+  /* acordeão (recolhível) para escalas RASS/GCS/CAM */
+  .ex-acc { border: 1px solid var(--border); border-radius: 9px; background: var(--bg); }
+  .ex-acc[open] { border-color: var(--accent); }
+  .ex-acc-sum { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .ex-acc-sum::-webkit-details-marker { display: none; }
+  .ex-acc-sum::before { content: '▸'; color: var(--accent); font-size: 12px; transition: transform .15s; }
+  .ex-acc[open] .ex-acc-sum::before { transform: rotate(90deg); }
+  .ex-acc-title { font-weight: 700; font-size: 12px; color: var(--text); }
+  .ex-acc-val { font-size: 12px; font-weight: 700; color: var(--accent); margin-left: auto; }
+  .ex-acc-hint { font-size: 10px; color: var(--text3); }
+  .ex-acc-body { padding: 6px 12px 12px; }
+  /* suporte de O2 — múltipla seleção com fluxo/FiO2 por opção */
+  .ex-o2-grid { display: flex; flex-direction: column; gap: 6px; }
+  .ex-o2-item { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ex-o2-item .ex-chip { flex: 0 0 auto; }
+  .ex-o2p { max-width: 150px; font-size: 11px; padding: 5px 8px; }
+  .ex-prof-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 6px; margin-top: 6px; }
+  @media (max-width: 640px) { .ex-prof-row { grid-template-columns: 1fr; } }
   .ex-field.ex-skipped .ex-sel, .ex-field.ex-skipped .ex-inp { pointer-events: none; }
   .ex-badge.skip { background: rgba(122,154,184,.18); color: var(--text2); }
   .ex-help { font-size: 10px; color: var(--text2); margin-top: 3px; line-height: 1.4; min-height: 13px; }
@@ -3288,19 +3306,30 @@ function exPresetChange(key){
   const b = w && w.querySelector('.ex-badge'); if(b && !w.classList.contains('ex-skipped')){ b.className='ex-badge '+(has?'ok':'miss'); b.textContent=has?'extraído':'preencher'; }
 }
 
-// ── RASS: escala interativa (cada valor com seu significado, clicável) ──
+// ── RASS: escala interativa recolhível (cada valor com seu significado) ──
 function exRassRow(val, sedContext){
   const filled = exHas(val);
   const rows = EX_RASS.map(r => `<div class="ex-scalerow${r===val?' active':''}" onclick="exPickRass('${r}')"><span class="ex-scaleval">${r}</span><span>${exEsc(RASS_MEAN[r])}</span></div>`).join('');
-  const note = sedContext ? 'Clique no nível correspondente.' : 'Preencher apenas se o paciente estiver sedado ou agitado.';
-  return `<div class="ex-field full" id="exf_rass">${exLabelRow('rass','RASS — escala de agitação-sedação',filled,true)}
-    <div class="ex-scalelist" id="ex_rass_row">${rows}</div>
+  return `<div class="ex-field full" id="exf_rass">
+    <details class="ex-acc">
+      <summary class="ex-acc-sum">
+        <span class="ex-acc-title">RASS</span>
+        <span class="ex-badge ${filled?'ok':'miss'}">${filled?'extraído':'preencher'}</span>
+        <span class="ex-acc-val" id="ex_rass_sum">${filled?('RASS '+exEsc(val)):''}</span>
+        <span class="ex-skiplink" onclick="event.preventDefault();event.stopPropagation();exToggleSkip('rass')">s/ dado</span>
+      </summary>
+      <div class="ex-acc-body">
+        <div class="ex-acc-hint" style="margin-bottom:6px;">Use só se o paciente estiver <b>sedado</b> ou <b>agitado</b> (se acordado e calmo, deixe em branco). Clique no nível:</div>
+        <div class="ex-scalelist" id="ex_rass_row">${rows}</div>
+      </div>
+    </details>
     <input type="hidden" id="ex_rass" value="${filled?exEsc(val):''}">
-    <div class="ex-help">${exEsc(note)}</div></div>`;
+  </div>`;
 }
 function exPickRass(r){
   document.querySelectorAll('#ex_rass_row .ex-scalerow').forEach(c => c.classList.toggle('active', c.querySelector('.ex-scaleval').textContent === r));
   document.getElementById('ex_rass').value = r;
+  const s = document.getElementById('ex_rass_sum'); if(s) s.textContent = 'RASS ' + r + ' — ' + (RASS_MEAN[r]||'');
   exMark(document.getElementById('ex_rass'), 'rass');
 }
 
@@ -3317,24 +3346,35 @@ function exGcsSel(part){
 }
 function renderGcs(val){
   const filled = exHas(val);
-  return `<div class="ex-field full" id="exf_gcs">${exLabelRow('gcs','Glasgow (GCS) — escolha cada componente',filled,true)}
-    <div class="ex-gcs-grid">
-      <div><div class="ex-label">Abertura ocular</div>${exGcsSel('ocular')}</div>
-      <div><div class="ex-label">Resposta verbal</div>${exGcsSel('verbal')}</div>
-      <div><div class="ex-label">Resposta motora</div>${exGcsSel('motora')}</div>
-    </div>
-    <div class="ex-gcs-total" id="ex_gcs_total">${filled?('GCS extraído: '+exEsc(val)+' — selecione os componentes para detalhar'):'Selecione os 3 componentes'}</div>
-    <input type="hidden" id="ex_gcs" value="${filled?exEsc(val):''}"></div>`;
+  return `<div class="ex-field full" id="exf_gcs">
+    <details class="ex-acc">
+      <summary class="ex-acc-sum">
+        <span class="ex-acc-title">Glasgow (GCS)</span>
+        <span class="ex-badge ${filled?'ok':'miss'}">${filled?'extraído':'preencher'}</span>
+        <span class="ex-acc-val" id="ex_gcs_sum">${filled?('GCS '+exEsc(val)):''}</span>
+        <span class="ex-skiplink" onclick="event.preventDefault();event.stopPropagation();exToggleSkip('gcs')">s/ dado</span>
+      </summary>
+      <div class="ex-acc-body">
+        <div class="ex-gcs-grid">
+          <div><div class="ex-label">Abertura ocular</div>${exGcsSel('ocular')}</div>
+          <div><div class="ex-label">Resposta verbal</div>${exGcsSel('verbal')}</div>
+          <div><div class="ex-label">Resposta motora</div>${exGcsSel('motora')}</div>
+        </div>
+        <div class="ex-gcs-total" id="ex_gcs_total">${filled?('GCS extraído: '+exEsc(val)):'Selecione os 3 componentes'}</div>
+      </div>
+    </details>
+    <input type="hidden" id="ex_gcs" value="${filled?exEsc(val):''}">
+  </div>`;
 }
 function exGcsCalc(){
   const o = document.querySelector('.ex-gcs-ocular').value, v = document.querySelector('.ex-gcs-verbal').value, m = document.querySelector('.ex-gcs-motora').value;
-  const tot = document.getElementById('ex_gcs_total'), hid = document.getElementById('ex_gcs');
+  const tot = document.getElementById('ex_gcs_total'), hid = document.getElementById('ex_gcs'), s = document.getElementById('ex_gcs_sum');
   if (o && v && m){
     const sum = (+o) + (v === 'T' ? 1 : +v) + (+m);
     const suf = v === 'T' ? 'T' : '';
     const str = `${sum}${suf} (O${o} V${v} M${m})`;
-    tot.textContent = 'GCS ' + str; hid.value = str;
-  } else { tot.textContent = 'Selecione os 3 componentes'; hid.value = ''; }
+    tot.textContent = 'GCS ' + str; hid.value = str; if(s) s.textContent = 'GCS ' + str;
+  } else { tot.textContent = 'Selecione os 3 componentes'; hid.value = ''; if(s) s.textContent = ''; }
   exMark(hid, 'gcs');
 }
 
@@ -3349,14 +3389,26 @@ let _camState = {};
 function renderCam(val){
   const filled = exHas(val);
   const feats = CAM_FEATURES.map(([k,t]) => `<div class="ex-cam-feat"><span>${exEsc(t)}</span><span class="ex-cam-btns"><span class="ex-cam-btn yes" data-f="${k}" data-v="1" onclick="exCamSet('${k}',1)">Sim</span><span class="ex-cam-btn no" data-f="${k}" data-v="0" onclick="exCamSet('${k}',0)">Não</span></span></div>`).join('');
-  return `<div class="ex-field full" id="exf_cam">${exLabelRow('cam','CAM-ICU — avaliação de delirium',filled,true)}
-    ${feats}
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">
-      <span class="ex-cam-btn" onclick="exCamNA()">Não avaliável (RASS -4/-5)</span>
-      <span class="ex-cam-result" id="ex_cam_result">${filled?('CAM-ICU extraído: '+exEsc(val)):''}</span>
-    </div>
+  return `<div class="ex-field full" id="exf_cam">
+    <details class="ex-acc">
+      <summary class="ex-acc-sum">
+        <span class="ex-acc-title">CAM-ICU (delirium)</span>
+        <span class="ex-badge ${filled?'ok':'miss'}">${filled?'extraído':'preencher'}</span>
+        <span class="ex-acc-val" id="ex_cam_sum">${filled?('CAM '+exEsc(val)):''}</span>
+        <span class="ex-skiplink" onclick="event.preventDefault();event.stopPropagation();exToggleSkip('cam')">s/ dado</span>
+      </summary>
+      <div class="ex-acc-body">
+        <div class="ex-acc-hint" style="margin-bottom:8px;">Avalie só se o paciente estiver acordado o suficiente (RASS ≥ -3). Responda os 4 critérios — o resultado sai automático.</div>
+        ${feats}
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+          <span class="ex-cam-btn" onclick="exCamNA()">Não avaliável (RASS -4/-5)</span>
+          <span class="ex-cam-result" id="ex_cam_result">${filled?('CAM-ICU: '+exEsc(val)):'Responda os 4 critérios'}</span>
+        </div>
+        <div class="ex-help" style="margin-top:6px;">Positivo = critério <b>1 E 2</b> E (<b>3 OU 4</b>) presentes.</div>
+      </div>
+    </details>
     <input type="hidden" id="ex_cam" value="${filled?exEsc(val):''}">
-    <div class="ex-help">Positivo = critério 1 E 2 E (3 OU 4). ${exEsc(CAM_LEGEND)}</div></div>`;
+  </div>`;
 }
 function exCamSet(f, v){
   _camState[f] = v;
@@ -3365,21 +3417,119 @@ function exCamSet(f, v){
 }
 function exCamCalc(){
   const { f1, f2, f3, f4 } = _camState;
-  const hid = document.getElementById('ex_cam'), res = document.getElementById('ex_cam_result');
+  const hid = document.getElementById('ex_cam'), res = document.getElementById('ex_cam_result'), s = document.getElementById('ex_cam_sum');
   if ([f1,f2,f3,f4].some(x => x === undefined)){ res.textContent = 'Responda os 4 critérios'; res.style.color = 'var(--text3)'; return; }
   const pos = f1 === 1 && f2 === 1 && (f3 === 1 || f4 === 1);
   hid.value = pos ? 'Positivo' : 'Negativo';
   res.textContent = 'CAM-ICU ' + hid.value + (pos ? ' (delirium presente)' : ' (sem delirium)');
   res.style.color = pos ? 'var(--danger)' : 'var(--success)';
+  if(s) s.textContent = 'CAM ' + hid.value;
   exMark(hid, 'cam');
 }
 function exCamNA(){
   _camState = {};
   document.querySelectorAll('.ex-cam-btn[data-f]').forEach(b => b.classList.remove('active'));
-  const hid = document.getElementById('ex_cam'), res = document.getElementById('ex_cam_result');
+  const hid = document.getElementById('ex_cam'), res = document.getElementById('ex_cam_result'), s = document.getElementById('ex_cam_sum');
   hid.value = 'Não avaliável';
   res.textContent = 'CAM-ICU não avaliável'; res.style.color = 'var(--text2)';
+  if(s) s.textContent = 'CAM N/D';
   exMark(hid, 'cam');
+}
+
+// ── SUPORTE DE O2 / VENTILAÇÃO: múltipla seleção + fluxo/FiO2 por opção ──
+const EX_O2 = [
+  {id:'ar',    label:'Ar ambiente', excl:true},
+  {id:'cat',   label:'Cateter nasal O2', unit:'L/min'},
+  {id:'vent',  label:'Máscara de Venturi', unit:'% O2'},
+  {id:'nrein', label:'Máscara não reinalante', unit:'L/min'},
+  {id:'cnaf',  label:'CNAF (alto fluxo)', unit:'L/min e FiO2%'},
+  {id:'vni',   label:'VNI (CPAP/BiPAP)', unit:'contínua/intermitente'},
+  {id:'tqto2', label:'Traqueostomia com O2', unit:'L/min'},
+  {id:'vm',    label:'VM invasiva', vm:true},
+  {id:'tqtvm', label:'Traqueostomia em VM', vm:true},
+];
+let _exO2 = {};
+function exMatchO2(s){
+  const n = (s||'').toLowerCase();
+  if (/ar ambiente/.test(n)) return 'ar';
+  if (/venturi/.test(n)) return 'vent';
+  if (/reinal/.test(n)) return 'nrein';
+  if (/cnaf|alto.?fluxo/.test(n)) return 'cnaf';
+  if (/vni|cpap|bipap/.test(n)) return 'vni';
+  if (/traqueo.*vm|tqt.*vm/.test(n)) return 'tqtvm';
+  if (/traqueo|tqt/.test(n)) return 'tqto2';
+  if (/cateter|nasal/.test(n)) return 'cat';
+  if (/vm|ventila.*mec|invasiv|intubad|\btot\b|\biot\b/.test(n)) return 'vm';
+  return null;
+}
+function renderO2(val){
+  _exO2 = {};
+  const pre = exMatchO2(val); if (pre) _exO2[pre] = '';
+  const filled = Object.keys(_exO2).length > 0;
+  const items = EX_O2.map(o => {
+    const on = (o.id in _exO2);
+    const pin = o.unit ? `<input class="ex-inp ex-o2p" id="ex_o2p_${o.id}" placeholder="${exEsc(o.unit)}" style="display:${on?'inline-block':'none'}" oninput="exO2Sync()">` : '';
+    return `<div class="ex-o2-item"><span class="ex-chip o2${on?' active':''}" data-o2="${o.id}" onclick="exO2Toggle('${o.id}')">${exEsc(o.label)}</span>${pin}</div>`;
+  }).join('');
+  return `<div class="ex-field full" id="exf_o2"><label class="ex-label">Suporte de O2 / ventilação ${filled?'<span class="ex-badge ok">extraído</span>':'<span class="ex-badge miss">preencher</span>'}<span class="ex-skiplink" onclick="exToggleSkip('o2')">s/ dado</span></label>
+    <div class="ex-o2-grid">${items}</div>
+    <div class="ex-acc-hint" style="margin-top:5px;">Pode marcar <b>mais de um</b> (ex.: máscara + VNI intermitente). Informe fluxo/FiO2 em cada opção marcada.</div>
+  </div>`;
+}
+function exO2Toggle(id){
+  const def = EX_O2.find(x => x.id === id);
+  if (id in _exO2){ delete _exO2[id]; }
+  else { if (def.excl) _exO2 = {}; else delete _exO2['ar']; _exO2[id] = ''; }
+  EX_O2.forEach(x => {
+    const on = (x.id in _exO2);
+    const chip = document.querySelector(`#exf_o2 .ex-chip[data-o2="${x.id}"]`); if (chip) chip.classList.toggle('active', on);
+    const pin = document.getElementById('ex_o2p_' + x.id); if (pin) pin.style.display = on ? 'inline-block' : 'none';
+  });
+  exO2Sync();
+}
+function exO2Sync(){
+  const w = document.getElementById('exf_o2'); const has = Object.keys(_exO2).length > 0;
+  const b = w && w.querySelector('.ex-badge'); if (b && !w.classList.contains('ex-skipped')){ b.className = 'ex-badge ' + (has?'ok':'miss'); b.textContent = has?'extraído':'preencher'; }
+  toggleVmFields();
+}
+
+// ── Profilaxia com presets + "Outros" (medicação + dose + posologia) ──
+function exProfSel(key, label, opts, val){
+  const isPreset = val && opts.includes(val);
+  const filled = exHas(val);
+  let o = `<option value="">— selecionar —</option>`;
+  opts.forEach(opt => o += `<option value="${exEsc(opt)}"${opt===val?' selected':''}>${exEsc(opt)}</option>`);
+  o += `<option value="__outro__"${(filled && !isPreset)?' selected':''}>Outros (digitar)</option>`;
+  const showOutro = (filled && !isPreset);
+  return `<div class="ex-field full" id="exf_${key}">${exLabelRow(key,label,filled,true)}
+    <select id="ex_${key}" class="ex-sel ${filled?'ok':'miss'}" onchange="exProfChange('${key}')">${o}</select>
+    <div class="ex-prof-row" id="ex_${key}_outrow" style="display:${showOutro?'grid':'none'}">
+      <input id="ex_${key}_med" class="ex-inp" placeholder="Medicação + via" value="${showOutro?exEsc(val):''}" oninput="exProfMark('${key}')">
+      <input id="ex_${key}_dose" class="ex-inp" placeholder="Dose (ex: 40 mg)" oninput="exProfMark('${key}')">
+      <input id="ex_${key}_pos" class="ex-inp" placeholder="Posologia (ex: 1x/dia)" oninput="exProfMark('${key}')">
+    </div>
+  </div>`;
+}
+function exProfChange(key){
+  const sel = document.getElementById('ex_'+key), row = document.getElementById('ex_'+key+'_outrow');
+  row.style.display = (sel.value === '__outro__') ? 'grid' : 'none';
+  exProfMark(key);
+}
+function exProfMark(key){
+  const sel = document.getElementById('ex_'+key), w = document.getElementById('exf_'+key);
+  const isOutro = sel.value === '__outro__';
+  const med = document.getElementById('ex_'+key+'_med');
+  const has = isOutro ? (med && med.value.trim() !== '') : sel.value !== '';
+  const b = w && w.querySelector('.ex-badge'); if (b && !w.classList.contains('ex-skipped')){ b.className = 'ex-badge ' + (has?'ok':'miss'); b.textContent = has?'extraído':'preencher'; }
+}
+function exGetProf(key){
+  if (_exSkip.has(key)) return '';
+  const sel = document.getElementById('ex_'+key); if (!sel) return '';
+  if (sel.value === '__outro__'){
+    const g = suf => { const e = document.getElementById('ex_'+key+'_'+suf); return e ? e.value.trim() : ''; };
+    return [g('med'), g('dose'), g('pos')].filter(Boolean).join(' ');
+  }
+  return sel.value.trim();
 }
 
 // ── Campo de escolha (chips) que revela um texto quando opção "reveal" é marcada ──
@@ -3511,7 +3661,7 @@ function exAddAtb(){ document.getElementById('ex_atb_list').insertAdjacentHTML('
 // monta todo o formulário a partir do JSON extraído
 function renderExameForm(p){
   p = p || {};
-  const vm = (p.o2 === 'VM invasiva' || p.o2 === 'Traqueostomia em VM');
+  const vm = ['vm','tqtvm'].includes(exMatchO2(p.o2));
   const isDiurnoAdm = (currentType === 'diurno' || currentType === 'admissao');
   _exSkip = new Set();
   _exWarnShown = false;
@@ -3557,8 +3707,10 @@ function renderExameForm(p){
 
   <div class="ex-sec">
     <div class="ex-sec-head">🫁 Respiratório / Ventilatório</div>
+    <div class="ex-grid one">
+      ${renderO2(p.o2)}
+    </div>
     <div class="ex-grid">
-      ${exSel('o2','Suporte de O2',EX_OPTS.o2,p.o2)}
       ${exSel('padr','Padrão respiratório',EX_OPTS.padr,p.padr)}
       ${exSel('mv','Murmúrio vesicular',EX_OPTS.mv,p.mv)}
       ${exSel('adv','Ruídos adventícios',EX_OPTS.adv,p.adv)}
@@ -3645,8 +3797,8 @@ function renderExameForm(p){
   <div class="ex-sec">
     <div class="ex-sec-head">🛡️ Profilaxias / Medicações</div>
     <div class="ex-grid">
-      ${exPresetSel('profilaxia_gastrica','Profilaxia gástrica',EX_PRESET.profilaxia_gastrica,p.profilaxia_gastrica,'Medicação + dose + posologia')}
-      ${exPresetSel('profilaxia_tep','Profilaxia TEP/TVP',EX_PRESET.profilaxia_tep,p.profilaxia_tep,'Medicação + dose + posologia ou medida mecânica')}
+      ${exProfSel('profilaxia_gastrica','Profilaxia gástrica',EX_PRESET.profilaxia_gastrica,p.profilaxia_gastrica)}
+      ${exProfSel('profilaxia_tep','Profilaxia TEP/TVP',EX_PRESET.profilaxia_tep,p.profilaxia_tep)}
     </div>
     <div style="padding:8px 12px 4px;">
       <label class="ex-label" style="margin-bottom:6px;">Antimicrobianos em uso</label>
@@ -3683,13 +3835,10 @@ function renderExameForm(p){
 
   document.getElementById('exameBody').innerHTML = html;
   document.getElementById('exameFootInfo').innerHTML = `<b style="color:var(--success)">${nFilled}</b> de ${nTotal} achados extraídos automaticamente — revise os campos em <span style="color:var(--warn)">laranja</span>. Campos sem sentido no caso: clique em "s/ dado".`;
-  // sincronizar mostrar/ocultar VM conforme o select de O2
-  document.getElementById('ex_o2').addEventListener('change', toggleVmFields);
 }
 function toggleVmFields(){
-  const v = document.getElementById('ex_o2').value;
-  const show = (v === 'VM invasiva' || v === 'Traqueostomia em VM');
-  document.getElementById('ex_vmwrap').style.display = show ? 'block' : 'none';
+  const vm = EX_O2.some(o => o.vm && (o.id in _exO2));
+  const w = document.getElementById('ex_vmwrap'); if (w) w.style.display = vm ? 'block' : 'none';
 }
 
 // lê o valor de um select com presets+Outros
@@ -3703,16 +3852,28 @@ function collectExame(){
   const skipped = k => _exSkip.has(k);
   const g = id => { if (skipped(id)) return ''; const el = document.getElementById('ex_'+id); return el ? String(el.value).trim() : ''; };
   const o = {};
-  ['ncons','pup','cam','padr','mv','adv','o2','vmodo','ritmo','aust','perf','edema','abd','rha','diet','urina','pele','lpp',
+  ['ncons','pup','cam','padr','mv','adv','vmodo','ritmo','aust','perf','edema','abd','rha','diet','urina','pele','lpp',
    'gcs','fio2','peep','vc','ppico','fr','spo2','fc','pas','pad','tax','du','saps3','peso',
    'rass','alergias','justificativa_uti',
    'bal_periodo','bal_ini','bal_fim','febre','escapes','diurese_vol','perdas','bh_sinal','bh_vol'
   ].forEach(k => { const v = g(k); if (v) o[k] = v; });
+  // SUPORTE DE O2 / VENTILAÇÃO (múltiplo, com fluxo/FiO2 por opção)
+  o.o2list = []; o.vm = false;
+  if (!skipped('o2')){
+    Object.keys(_exO2).forEach(id => {
+      const def = EX_O2.find(x => x.id === id); if (!def) return;
+      const pin = document.getElementById('ex_o2p_' + id);
+      const pv = pin ? pin.value.trim() : '';
+      o.o2list.push(pv ? `${def.label} ${pv}` : def.label);
+      if (def.vm) o.vm = true;
+    });
+  }
+  o.o2 = o.o2list.join(' + ');
   // textos revelados das escolhas (febre/escapes)
   if (!skipped('febre')) { const t = document.getElementById('ex_febre_txt'); if (t) o.febre_val = t.value.trim(); }
   if (!skipped('escapes')) { const t = document.getElementById('ex_escapes_txt'); if (t) o.escapes_val = t.value.trim(); }
-  o.profilaxia_gastrica = exGetPreset('profilaxia_gastrica');
-  o.profilaxia_tep = exGetPreset('profilaxia_tep');
+  o.profilaxia_gastrica = exGetProf('profilaxia_gastrica');
+  o.profilaxia_tep = exGetProf('profilaxia_tep');
   o.demanda_familiar = exGetPreset('demanda_familiar');
   o.dispositivos = (g('dispositivos') || '').split(',').map(s=>s.trim()).filter(Boolean);
   o.atb = [];
@@ -3838,10 +3999,10 @@ function cancelExameRevisao(){
 // ── Checagem de coerência semiológica (antes de gerar) ──
 function exCoherenceWarnings(o){
   const w = [];
-  const vm = (o.o2 === 'VM invasiva' || o.o2 === 'Traqueostomia em VM');
+  const vm = !!o.vm;
   if (vm && !o.vmodo && !o.fio2 && !o.peep && !o.vc && !o.ppico)
     w.push('Ventilação mecânica selecionada, mas sem nenhum parâmetro (modo / FiO2 / PEEP / VC).');
-  if (o.o2 === 'Ar ambiente' && (o.vmodo || o.fio2 || o.peep || o.vc || o.ppico))
+  if (/ar ambiente/i.test(o.o2 || '') && (o.vmodo || o.fio2 || o.peep || o.vc || o.ppico))
     w.push('"Ar ambiente" selecionado, mas há parâmetros de ventilação mecânica preenchidos.');
   const hasSed = (o.infusoes||[]).some(i=>i.cat==='sed') || /sed|coma|torpor|rebaix/i.test(o.ncons||'');
   if (hasSed && !o.rass && !_exSkip.has('rass'))
