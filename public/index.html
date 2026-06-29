@@ -938,6 +938,22 @@
   .ex-atb-row .ex-inp { font-size: 11px; padding: 5px 7px; }
   .ex-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface2); flex-wrap: wrap; }
   .ex-foot-info { font-size: 11px; color: var(--text2); }
+  .ex-skiplink { font-size: 9px; color: var(--text3); cursor: pointer; margin-left: auto; padding: 1px 6px; border: 1px solid var(--border); border-radius: 8px; user-select: none; }
+  .ex-skiplink:hover { color: var(--text); border-color: var(--text3); }
+  .ex-field.ex-skipped { opacity: .45; }
+  .ex-field.ex-skipped .ex-sel, .ex-field.ex-skipped .ex-inp { pointer-events: none; }
+  .ex-badge.skip { background: rgba(122,154,184,.18); color: var(--text2); }
+  .ex-help { font-size: 10px; color: var(--text2); margin-top: 3px; line-height: 1.4; min-height: 13px; }
+  .ex-legend { margin-top: 4px; }
+  .ex-legend summary { font-size: 10px; color: var(--accent); cursor: pointer; list-style: none; }
+  .ex-legend summary::-webkit-details-marker { display: none; }
+  .ex-legend-body { font-size: 10px; color: var(--text2); line-height: 1.5; padding: 6px 8px; margin-top: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+  .ex-inf-toggle { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text2); padding: 8px 12px; cursor: pointer; }
+  .ex-inf-toggle input { width: 15px; height: 15px; accent-color: var(--accent); }
+  .ex-inf-row { display: grid; grid-template-columns: 1.7fr 0.8fr 1.4fr auto; gap: 6px; align-items: center; margin: 0 12px 7px; }
+  .ex-inf-row .ex-inp, .ex-inf-row .ex-sel { font-size: 11px; padding: 6px 8px; }
+  .ex-inf-dose { font-size: 11px; font-weight: 600; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 640px) { .ex-inf-row { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 640px) {
     .ex-grid { grid-template-columns: 1fr; }
     .ex-atb-row { grid-template-columns: 1fr 1fr; }
@@ -2685,6 +2701,19 @@ DIAGNOSTICO DE CHOQUE DISTRIBUTIVO DESATUALIZADO: PACIENTE SEM DVA HÁ 3 DIAS E 
 Se NAO houver incoerencias detectadas, NAO gerar este bloco. Nao escrever "sem alertas" nem bloco vazio.
 
 ===========================================================
+REGRA NUMERO 23 — LOGICA SEMIOLOGICA, DADOS FALTANTES E CAMPOS "SEM DADO" (N/D):
+===========================================================
+a) TODO o texto de TODAS as secoes deve seguir a LOGICA e a ESCRITA da SEMIOLOGIA MEDICA: descricoes coerentes entre si, terminologia correta, sequencia logica do exame fisico, sem contradicoes (ex: nao descrever "murmurio vesicular fisiologico" e ao mesmo tempo "crepitacoes difusas" sem nexo; nao citar parametros de VM se o paciente esta em ar ambiente).
+b) COERENCIA CONTEXTUAL — so descrever o que faz sentido para o caso:
+   - RASS so quando ha sedacao/agitacao; em paciente acordado e calmo sem sedacao, NAO inventar RASS.
+   - Parametros de VM (modo, FiO2, PEEP, VC, Ppico) so quando em ventilacao mecanica.
+   - Doses de droga vasoativa so quando ha droga vasoativa em uso; se "SEM DROGA VASOATIVA", nao citar doses.
+   - CAM-ICU (delirium) so quando avaliavel (RASS >= -3); se sedado profundo, registrar "nao avaliavel".
+c) DADOS FALTANTES: se faltar um dado clinicamente NECESSARIO para o tipo de evolucao e ele NAO estiver marcado como N/D, usar o marcador [COMPLEMENTAR: ...] solicitando ao usuario — NUNCA inventar.
+d) CAMPOS MARCADOS COMO "SEM DADO" (N/D) PELO MEDICO: quando o exame estruturado informar que certos campos foram marcados como N/D, para ESSES campos NAO usar [COMPLEMENTAR] nem inventar — simplesmente OMITIR do texto (ou, apenas se a semiologia do campo exigir explicitamente registro, escrever "nao avaliado"/"nao disponivel"). O medico ja indicou que nao ha esse dado.
+e) DEBITO URINARIO e BALANCO HIDRICO podem vir PARCIAIS (nao das 24h completas). Reproduzir o que foi informado sem assumir que e de 24h; nao fabricar valor de 24h.
+
+===========================================================
 FORMATACAO OBRIGATORIA:
 ===========================================================
 
@@ -3085,77 +3114,228 @@ const EX_OPTS = {
   lpp: ["Ausente","Estágio I (hiperemia reativa)","Estágio II (perda da derme)","Estágio III (tecido subcutâneo)","Estágio IV (músculo/osso)"],
   bnm: ["Sem bloqueador neuromuscular","Cisatracurio","Rocuronio","Atracurio"],
 };
-const EX_RASS = ["-5","-4","-3","-2","-1","0","+1","+2","+3","+4"];
-const EX_DVA  = ["Sem DVA","Noradrenalina","Adrenalina","Dobutamina","Vasopressina"];
+const EX_RASS = ["+4","+3","+2","+1","0","-1","-2","-3","-4","-5"];
+// significado de cada valor da escala RASS (mostrado ao selecionar)
+const RASS_MEAN = {
+  '+4':'Combativo — violento, risco à equipe','+3':'Muito agitado — puxa/retira dispositivos, agressivo',
+  '+2':'Agitado — movimentos não-propositais, briga com o ventilador','+1':'Inquieto — ansioso, sem movimentos agressivos',
+  '0':'Alerta e calmo','-1':'Sonolento — desperta ao chamado (>10s), mantém contato visual',
+  '-2':'Sedação leve — desperta breve ao chamado (<10s)','-3':'Sedação moderada — movimenta ao chamado, sem contato visual',
+  '-4':'Sedação profunda — sem resposta à voz, movimenta à estimulação física','-5':'Não desperta — sem resposta a voz ou estímulo físico'
+};
+const GCS_LEGEND = 'Abertura ocular (1–4) + Resposta verbal (1–5) + Resposta motora (1–6). Total 3–15. 15 = normal · 9–12 = rebaixamento moderado · ≤8 = coma (considerar via aérea).';
+const CAM_LEGEND = 'CAM-ICU avalia delirium (após RASS ≥ -3). POSITIVO = delirium presente · NEGATIVO = ausente · NÃO AVALIÁVEL = RASS -4/-5 ou sem condições. Orientativa.';
 // faixas de normalidade para alerta visual nos vitais [min, max]
 const EX_VITALS = { fc:[50,110], pas:[90,160], pad:[50,95], fr:[10,24], tax:[35.5,37.8], spo2:[92,100] };
+
+// ── Tabela de medicações em INFUSÃO contínua (diluições padrão do serviço) ──
+// cat: vaso (vasoativa/inotrópico) | sed (sedação/analgesia) | bnm | outro
+// kind define a fórmula de dose a partir da velocidade (mL/h) e do peso
+const EX_DRUGS = [
+  { id:'nora1', nome:'Noradrenalina', label:'Noradrenalina (8 amp · 160 mcg/mL)', cat:'vaso', conc:160, kind:'mcgkgmin' },
+  { id:'nora2', nome:'Noradrenalina', label:'Noradrenalina (4 amp · 80 mcg/mL)',  cat:'vaso', conc:80,  kind:'mcgkgmin' },
+  { id:'adre',  nome:'Adrenalina',    label:'Adrenalina (100 mcg/mL)',            cat:'vaso', conc:100, kind:'mcgkgmin' },
+  { id:'dobu',  nome:'Dobutamina',    label:'Dobutamina (2000 mcg/mL)',           cat:'vaso', conc:2000,kind:'mcgkgmin' },
+  { id:'dopa',  nome:'Dopamina',      label:'Dopamina (4444 mcg/mL)',             cat:'vaso', conc:4444,kind:'mcgkgmin' },
+  { id:'vaso',  nome:'Vasopressina',  label:'Vasopressina (0,2 UI/mL)',           cat:'vaso', conc:0.2, kind:'uimin' },
+  { id:'nipride',nome:'Nitroprussiato',label:'Nipride / Nitroprussiato (200 mcg/mL)',cat:'vaso',conc:200,kind:'mcgkgmin' },
+  { id:'ntg',   nome:'Nitroglicerina',label:'Nitroglicerina (200 mcg/mL)',        cat:'vaso', conc:200, kind:'mcgkgmin' },
+  { id:'propofol',nome:'Propofol',    label:'Propofol (10 mg/mL)',                cat:'sed',  conc:10,  kind:'mgkgh' },
+  { id:'midazolam',nome:'Midazolam',  label:'Midazolam (1 mg/mL)',                cat:'sed',  conc:1,   kind:'mgkgh' },
+  { id:'fentanil',nome:'Fentanil',    label:'Fentanil (50 mcg/mL)',               cat:'sed',  conc:50,  kind:'mcgkgmin' },
+  { id:'precedex',nome:'Dexmedetomidina',label:'Precedex / Dexmedetomidina (1,6 mcg/mL)',cat:'sed',conc:1.6,kind:'mcgkgh' },
+  { id:'quetamina',nome:'Quetamina',  label:'Quetamina (2 mg/mL)',                cat:'sed',  conc:2,   kind:'mgkgh' },
+  { id:'morfina',nome:'Morfina',      label:'Morfina (1000 mcg/mL)',              cat:'sed',  conc:1000,kind:'mcgkgmin' },
+  { id:'cisatracurio',nome:'Cisatracúrio',label:'Cisatracúrio (400 mcg/mL)',      cat:'bnm',  conc:400, kind:'mcgkgmin' },
+  { id:'rocuronio',nome:'Rocurônio',  label:'Rocurônio (2 mg/mL)',                cat:'bnm',  conc:2,   kind:'mgkgh' },
+  { id:'atracurio',nome:'Atracúrio',  label:'Atracúrio (1000 mcg/mL)',            cat:'bnm',  conc:1000,kind:'mcgkgmin' },
+  { id:'amiodarona',nome:'Amiodarona',label:'Amiodarona (3,6 mg/mL)',             cat:'outro',conc:3.6, kind:'mgh' },
+];
+const EX_DRUG_GROUPS = { vaso:'Vasoativas / inotrópicos', sed:'Sedação / analgesia', bnm:'Bloqueador neuromuscular', outro:'Outras infusões' };
+// calcula a dose a partir da velocidade (mL/h), concentração e peso. null = falta peso
+function exDoseCalc(kind, conc, vel, w){
+  const v = parseFloat(String(vel).replace(',','.')); const wt = parseFloat(w);
+  if (!(v > 0)) return '';
+  switch (kind){
+    case 'mcgkgmin': if(!(wt>0)) return null; return { val: v*conc/(wt*60), unit:'mcg/kg/min', dec:3 };
+    case 'mcgkgh':   if(!(wt>0)) return null; return { val: v*conc/wt,      unit:'mcg/kg/h',  dec:3 };
+    case 'mgkgh':    if(!(wt>0)) return null; return { val: v*conc/wt,      unit:'mg/kg/h',   dec:2 };
+    case 'uimin':    return { val: v*conc/60, unit:'UI/min', dec:3 };
+    case 'mgh':      return { val: v*conc,    unit:'mg/h',   dec:1 };
+  }
+  return '';
+}
+function exFmtDose(d){ return (d && d.val!=null) ? d.val.toFixed(d.dec).replace('.',',') + ' ' + d.unit : ''; }
+// casa um nome livre de medicação com um id da tabela (para pré-preencher a extração)
+function exMatchDrug(nome){
+  const n = (nome||'').toLowerCase();
+  const map = [['noradr','nora1'],['nora','nora1'],['adren','adre'],['dobu','dobu'],['dopa','dopa'],
+    ['vasopr','vaso'],['nipr','nipride'],['nitroprus','nipride'],['nitrogli','ntg'],['tridil','ntg'],
+    ['propofol','propofol'],['midaz','midazolam'],['dormonid','midazolam'],['fentan','fentanil'],
+    ['precedex','precedex'],['dexmedet','precedex'],['quetam','quetamina'],['ketam','quetamina'],['morfina','morfina'],
+    ['cisatrac','cisatracurio'],['nimbex','cisatracurio'],['rocur','rocuronio'],['atracur','atracurio'],['amiodar','amiodarona']];
+  for (const [k,id] of map){ if (n.includes(k)) return id; }
+  return null;
+}
+
+// ── Presets de medicações (mais usadas) — sempre com opção "Outros" ──
+const EX_PRESET = {
+  profilaxia_gastrica: ["Pantoprazol 40 mg IV 1x/dia","Omeprazol 40 mg IV 1x/dia","Esomeprazol 40 mg IV 1x/dia","Ranitidina 50 mg IV 8/8h","Sem profilaxia gástrica (sem indicação)"],
+  profilaxia_tep: ["Enoxaparina 40 mg SC 1x/dia","Enoxaparina 40 mg SC 12/12h","Heparina 5000 UI SC 8/8h","Heparina 5000 UI SC 12/12h","Compressão pneumática intermitente (mecânica)","Meia elástica de compressão","Sem profilaxia (contraindicada)"],
+  demanda_familiar: ["Familiares cientes da gravidade do caso e das condutas adotadas, sem questionamentos no momento"],
+};
+// rótulos legíveis dos campos (para a lista de N/D)
+const EX_LABELS = { ncons:'Nível de consciência', pup:'Pupilas', rass:'RASS', gcs:'Glasgow', cam:'CAM-ICU',
+  o2:'Suporte de O2', padr:'Padrão respiratório', mv:'Murmúrio vesicular', adv:'Ruídos adventícios', spo2:'SpO2', fr:'FR',
+  fc:'FC', tax:'Temperatura', pas:'PA sistólica', pad:'PA diastólica', ritmo:'Ritmo', aust:'Ausculta cardíaca', perf:'Perfusão', edema:'Edema',
+  abd:'Abdome', rha:'RHA', diet:'Dieta', urina:'Diurese (aspecto)', du:'Débito urinário', bh:'Balanço hídrico', pele:'Pele', lpp:'Lesão por pressão' };
+
 let _exameParsed = null;   // JSON cru devolvido pela extração
-let _exameDva = [];        // estado das chips de DVA (multi)
+let _exSkip = new Set();    // campos marcados como "sem dado" (N/D) pelo médico
 
 function exEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function exHas(v){ return v!==null && v!==undefined && String(v).trim()!==''; }
-function exBadge(filled){ return filled ? '<span class="ex-badge ok">extraído</span>' : '<span class="ex-badge miss">preencher</span>'; }
+// linha de rótulo: rótulo + badge (extraído/preencher) + link "sem dado" (ignorar)
+function exLabelRow(key, label, filled, skippable){
+  const badge = filled ? '<span class="ex-badge ok">extraído</span>' : '<span class="ex-badge miss">preencher</span>';
+  const skip = skippable ? `<span class="ex-skiplink" onclick="exToggleSkip('${key}')">s/ dado</span>` : '';
+  return `<label class="ex-label">${label} ${badge}${skip}</label>`;
+}
+// marca um campo como "sem dado" (N/D) e o reabilita ao clicar de novo
+function exToggleSkip(key){
+  const w = document.getElementById('exf_'+key); if(!w) return;
+  const sk = w.classList.toggle('ex-skipped');
+  w.querySelectorAll('select,input').forEach(el => el.disabled = sk);
+  if (sk) _exSkip.add(key); else _exSkip.delete(key);
+  const ctrl = w.querySelector('select,input');
+  const has = ctrl && String(ctrl.value).trim() !== '';
+  const b = w.querySelector('.ex-badge');
+  if (b){ b.className = 'ex-badge ' + (sk ? 'skip' : (has?'ok':'miss')); b.textContent = sk ? 'sem dado' : (has?'extraído':'preencher'); }
+  const lk = w.querySelector('.ex-skiplink'); if (lk) lk.textContent = sk ? 'incluir' : 's/ dado';
+}
+// atualiza badge ao editar
+function exMark(el, key){
+  const w = document.getElementById('exf_'+key); if(!w || w.classList.contains('ex-skipped')) return;
+  const has = String(el.value).trim() !== '';
+  const b = w.querySelector('.ex-badge'); if(b){ b.className='ex-badge '+(has?'ok':'miss'); b.textContent=has?'extraído':'preencher'; }
+}
 
-// campo SELECT com opções pré-definidas
-function exSel(key, label, opts, val){
+// campo SELECT com opções pré-definidas (+ legenda opcional)
+function exSel(key, label, opts, val, help){
   const filled = exHas(val);
-  const cls = filled ? 'ok' : 'miss';
   let o = `<option value="">— selecionar —</option>`;
-  opts.forEach(opt => { const sel = (opt === val) ? ' selected' : ''; o += `<option value="${exEsc(opt)}"${sel}>${exEsc(opt)}</option>`; });
-  return `<div class="ex-field"><label class="ex-label">${label} ${exBadge(filled)}</label><select id="ex_${key}" class="ex-sel ${cls}" onchange="this.classList.remove('miss');this.classList.add('ok')">${o}</select></div>`;
+  opts.forEach(opt => { o += `<option value="${exEsc(opt)}"${opt===val?' selected':''}>${exEsc(opt)}</option>`; });
+  const helpHtml = help ? `<div class="ex-help">${exEsc(help)}</div>` : '';
+  return `<div class="ex-field" id="exf_${key}">${exLabelRow(key,label,filled,true)}<select id="ex_${key}" class="ex-sel ${filled?'ok':'miss'}" onchange="exMark(this,'${key}')">${o}</select>${helpHtml}</div>`;
 }
 // campo numérico (com alerta de vital fora da faixa)
 function exNum(key, label, val, unit){
   const filled = exHas(val);
-  const cls = filled ? 'ok' : 'miss';
   const u = unit ? ` <span style="color:var(--text3)">(${unit})</span>` : '';
-  const vit = EX_VITALS[key] ? ` oninput="exVitalCheck(this,'${key}')"` : '';
+  const vit = EX_VITALS[key] ? ` oninput="exVitalCheck(this,'${key}')"` : ` oninput="exMark(this,'${key}')"`;
   const bad = (EX_VITALS[key] && filled && (parseFloat(val) < EX_VITALS[key][0] || parseFloat(val) > EX_VITALS[key][1])) ? ' vital-bad' : '';
-  return `<div class="ex-field"><label class="ex-label">${label}${u} ${exBadge(filled)}</label><input id="ex_${key}" type="number" step="any" class="ex-inp ${cls}${bad}" value="${filled?exEsc(val):''}"${vit}></div>`;
+  return `<div class="ex-field" id="exf_${key}"><label class="ex-label">${label}${u} ${filled?'<span class="ex-badge ok">extraído</span>':'<span class="ex-badge miss">preencher</span>'}<span class="ex-skiplink" onclick="exToggleSkip('${key}')">s/ dado</span></label><input id="ex_${key}" type="number" step="any" class="ex-inp ${filled?'ok':'miss'}${bad}" value="${filled?exEsc(val):''}"${vit}></div>`;
 }
-// campo texto livre
+// campo texto livre simples (não-ignorável)
 function exTxt(key, label, val, ph){
   const filled = exHas(val);
-  const cls = filled ? 'ok' : 'miss';
-  return `<div class="ex-field full"><label class="ex-label">${label} ${exBadge(filled)}</label><input id="ex_${key}" type="text" class="ex-inp ${cls}" value="${filled?exEsc(val):''}" placeholder="${ph?exEsc(ph):''}"></div>`;
+  return `<div class="ex-field full" id="exf_${key}"><label class="ex-label">${label} ${filled?'<span class="ex-badge ok">extraído</span>':'<span class="ex-badge miss">preencher</span>'}</label><input id="ex_${key}" type="text" class="ex-inp ${filled?'ok':'miss'}" value="${filled?exEsc(val):''}" placeholder="${ph?exEsc(ph):''}" oninput="exMark(this,'${key}')"></div>`;
 }
 function exVitalCheck(el, key){
   const r = EX_VITALS[key]; const v = parseFloat(el.value);
   el.classList.toggle('vital-bad', el.value!=='' && (v < r[0] || v > r[1]));
-  el.classList.remove('miss'); el.classList.add('ok');
+  exMark(el, key);
 }
 
-// linha de chips RASS (seleção única)
-function exRassRow(val){
+// SELECT de medicação com presets (mais usadas) + opção "Outros (digitar)"
+function exPresetSel(key, label, opts, val, ph){
+  const isPreset = val && opts.includes(val);
+  const filled = exHas(val);
+  let o = `<option value="">— selecionar —</option>`;
+  opts.forEach(opt => { o += `<option value="${exEsc(opt)}"${opt===val?' selected':''}>${exEsc(opt)}</option>`; });
+  o += `<option value="__outro__"${(filled && !isPreset)?' selected':''}>Outros (digitar)</option>`;
+  const outroVal = (filled && !isPreset) ? val : '';
+  const showOutro = (filled && !isPreset);
+  return `<div class="ex-field full" id="exf_${key}">${exLabelRow(key,label,filled,true)}
+    <select id="ex_${key}" class="ex-sel ${filled?'ok':'miss'}" onchange="exPresetChange('${key}')">${o}</select>
+    <input id="ex_${key}_outro" type="text" class="ex-inp" style="margin-top:6px;display:${showOutro?'block':'none'}" placeholder="${ph?exEsc(ph):'Digite...'}" value="${exEsc(outroVal)}" oninput="exMark(document.getElementById('ex_${key}'),'${key}')"></div>`;
+}
+function exPresetChange(key){
+  const sel = document.getElementById('ex_'+key); const outro = document.getElementById('ex_'+key+'_outro');
+  const isOutro = sel.value === '__outro__';
+  outro.style.display = isOutro ? 'block' : 'none';
+  const w = document.getElementById('exf_'+key);
+  const has = isOutro ? outro.value.trim()!=='' : sel.value!=='';
+  const b = w && w.querySelector('.ex-badge'); if(b && !w.classList.contains('ex-skipped')){ b.className='ex-badge '+(has?'ok':'miss'); b.textContent=has?'extraído':'preencher'; }
+}
+
+// linha de chips RASS (seleção única) com legenda do significado
+function exRassRow(val, sedContext){
   const filled = exHas(val);
   const chips = EX_RASS.map(r => `<span class="ex-chip rass${r===val?' active':''}" onclick="exPickRass(this,'${r}')">${r}</span>`).join('');
-  return `<div class="ex-field full"><label class="ex-label">RASS ${exBadge(filled)}</label><div class="ex-chiprow" id="ex_rass_row">${chips}</div><input type="hidden" id="ex_rass" value="${filled?exEsc(val):''}"></div>`;
+  const note = filled ? ('RASS '+val+': '+(RASS_MEAN[val]||'')) : (sedContext ? 'Selecione o nível de sedação/agitação (RASS).' : 'Preencher apenas se o paciente estiver sedado ou agitado.');
+  const legend = Object.keys(RASS_MEAN).map(k=>`<b>${k}</b> ${exEsc(RASS_MEAN[k])}`).join('<br>');
+  return `<div class="ex-field full" id="exf_rass">${exLabelRow('rass','RASS',filled,true)}
+    <div class="ex-chiprow" id="ex_rass_row">${chips}</div>
+    <input type="hidden" id="ex_rass" value="${filled?exEsc(val):''}">
+    <div class="ex-help" id="ex_rass_help">${exEsc(note)}</div>
+    <details class="ex-legend"><summary>ver escala RASS completa</summary><div class="ex-legend-body">${legend}</div></details></div>`;
 }
 function exPickRass(el, r){
   document.querySelectorAll('#ex_rass_row .ex-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('ex_rass').value = r;
+  const h = document.getElementById('ex_rass_help'); if(h) h.textContent = 'RASS '+r+': '+(RASS_MEAN[r]||'');
+  exMark(document.getElementById('ex_rass'), 'rass');
 }
-// linha de chips DVA (seleção múltipla; "Sem DVA" é exclusivo)
-function exDvaRow(arr){
-  _exameDva = Array.isArray(arr) ? arr.slice() : [];
-  const filled = _exameDva.length > 0;
-  const chips = EX_DVA.map(d => `<span class="ex-chip${_exameDva.includes(d)?' active':''}" onclick="exToggleDva(this,'${exEsc(d)}')">${exEsc(d)}</span>`).join('');
-  return `<div class="ex-field full"><label class="ex-label">Drogas vasoativas ${exBadge(filled)}</label><div class="ex-chiprow" id="ex_dva_row">${chips}</div></div>`;
+
+// ── Medicações em INFUSÃO contínua (medicação + mL/h → dose calculada) ──
+function exInfSection(rows){
+  const list = (Array.isArray(rows)?rows:[]).map(r=>exInfRow(r)).join('');
+  return `<div class="ex-inf-toggle"><input type="checkbox" id="ex_seminf" onchange="exToggleSemInf()"><label for="ex_seminf">Paciente SEM medicações em infusão contínua</label></div>
+    <div id="ex_inf_wrap">
+      <div id="ex_inf_list">${list}</div>
+      <button class="rx-add" onclick="exAddInf()">+ Medicação em infusão</button>
+      <div class="ex-help" style="margin:0 12px 8px;">Escolha a medicação e a velocidade (mL/h) — a dose é calculada pelo peso. Em "Outros", informe nome e dose manualmente.</div>
+    </div>`;
 }
-function exToggleDva(el, d){
-  if (d === 'Sem DVA'){
-    _exameDva = el.classList.contains('active') ? [] : ['Sem DVA'];
-  } else {
-    _exameDva = _exameDva.filter(x => x !== 'Sem DVA');
-    if (_exameDva.includes(d)) _exameDva = _exameDva.filter(x => x !== d);
-    else _exameDva.push(d);
-  }
-  // re-render estados
-  document.querySelectorAll('#ex_dva_row .ex-chip').forEach(c => {
-    c.classList.toggle('active', _exameDva.includes(c.textContent));
+function exInfRow(r){
+  r = r || {};
+  let o = `<option value="">— medicação —</option>`;
+  Object.keys(EX_DRUG_GROUPS).forEach(cat => {
+    o += `<optgroup label="${EX_DRUG_GROUPS[cat]}">`;
+    EX_DRUGS.filter(d=>d.cat===cat).forEach(d => { o += `<option value="${d.id}"${r.id===d.id?' selected':''}>${exEsc(d.label)}</option>`; });
+    o += `</optgroup>`;
   });
+  o += `<option value="outro"${r.custom?' selected':''}>Outros (digitar)</option>`;
+  const isOutro = !!r.custom;
+  return `<div class="ex-inf-row">
+    <select class="ex-sel ex-inf-drug" onchange="exInfDrugChange(this)">${o}</select>
+    <input type="number" step="any" class="ex-inp ex-inf-vel" placeholder="mL/h" value="${r.rate?exEsc(r.rate):''}" oninput="exInfCalc(this)" style="display:${isOutro?'none':'block'}">
+    <span class="ex-inf-dose" style="display:${isOutro?'none':'inline'}">${r.doseTxt?('= '+exEsc(r.doseTxt)):''}</span>
+    <input type="text" class="ex-inp ex-inf-cname" placeholder="Nome" value="${r.custom?exEsc(r.custom):''}" style="display:${isOutro?'block':'none'};grid-column:2">
+    <input type="text" class="ex-inp ex-inf-cdose" placeholder="Dose / posologia" value="${r.cdose?exEsc(r.cdose):''}" style="display:${isOutro?'block':'none'};grid-column:3">
+    <button class="rx-del" style="grid-column:4" onclick="this.closest('.ex-inf-row').remove()">✕</button>
+  </div>`;
 }
+function exInfDrugChange(sel){
+  const row = sel.closest('.ex-inf-row'); const isOutro = sel.value === 'outro';
+  row.querySelector('.ex-inf-vel').style.display = isOutro?'none':'block';
+  row.querySelector('.ex-inf-dose').style.display = isOutro?'none':'inline';
+  row.querySelector('.ex-inf-cname').style.display = isOutro?'block':'none';
+  row.querySelector('.ex-inf-cdose').style.display = isOutro?'block':'none';
+  if(!isOutro) exInfCalc(row.querySelector('.ex-inf-vel'));
+}
+function exInfCalc(velEl){
+  const row = velEl.closest('.ex-inf-row'); const id = row.querySelector('.ex-inf-drug').value;
+  const out = row.querySelector('.ex-inf-dose'); const d = EX_DRUGS.find(x=>x.id===id);
+  if(!d){ out.textContent=''; return; }
+  const dose = exDoseCalc(d.kind, d.conc, velEl.value, document.getElementById('patientWeight').value);
+  if(dose===null){ out.textContent='⚠️ informe o peso'; out.style.color='var(--warn)'; return; }
+  out.style.color='var(--accent)'; out.textContent = dose ? ('= '+exFmtDose(dose)) : '';
+}
+function exAddInf(){ document.getElementById('ex_inf_list').insertAdjacentHTML('beforeend', exInfRow({})); }
+function exToggleSemInf(){ const c=document.getElementById('ex_seminf').checked; document.getElementById('ex_inf_wrap').style.display=c?'none':'block'; }
 
 // linhas dinâmicas de ATB
 function exAtbRows(arr){
@@ -3180,20 +3360,42 @@ function renderExameForm(p){
   p = p || {};
   const vm = (p.o2 === 'VM invasiva' || p.o2 === 'Traqueostomia em VM');
   const isDiurnoAdm = (currentType === 'diurno' || currentType === 'admissao');
+  _exSkip = new Set();
   let nFilled = 0, nTotal = 0;
   const count = v => { nTotal++; if (exHas(v)) nFilled++; };
-  ['ncons','rass','gcs','pup','cam','o2','padr','mv','adv','spo2','fr','fc','pas','pad','ritmo','aust','perf','edema','abd','rha','diet','urina','du','bh','tax','pele','lpp'].forEach(k=>count(p[k]));
+  ['ncons','pup','o2','padr','mv','adv','spo2','fr','fc','pas','pad','ritmo','aust','perf','edema','abd','rha','diet','urina','pele'].forEach(k=>count(p[k]));
+
+  // contexto de sedação → define se RASS é esperado
+  const sedContext = /sed|rass|coma|torpor/i.test(String(p.ncons||'')) || exHas(p.rass) || (Array.isArray(p.infusoes) && p.infusoes.some(i=>/propofol|midaz|fentan|precedex|dexmed|quetam|morfina|cisatrac|rocur|atracur/i.test(i.nome||'')));
+
+  // linhas iniciais de infusão a partir da extração
+  let infRows = [];
+  if (Array.isArray(p.infusoes) && p.infusoes.length){
+    infRows = p.infusoes.map(i => {
+      const id = exMatchDrug(i.nome);
+      const rate = i.rate || i.rate_ml_h || '';
+      if (id){ const d = EX_DRUGS.find(x=>x.id===id); let doseTxt=''; if(rate){ const dz=exDoseCalc(d.kind,d.conc,rate,p.peso||document.getElementById('patientWeight').value); if(dz&&dz!==null) doseTxt=exFmtDose(dz); } return { id, rate, doseTxt }; }
+      return { custom: i.nome||'', cdose: i.dose||'' };
+    });
+  } else if (Array.isArray(p.dva)) {
+    infRows = p.dva.filter(x=>x && x!=='Sem DVA').map(name => { const id=exMatchDrug(name); return id?{id}:{custom:name}; });
+  }
 
   const html = `
   <div class="ex-sec">
     <div class="ex-sec-head">🧠 Neurológico</div>
     <div class="ex-grid">
-      ${exSel('ncons','Nível de consciência',EX_OPTS.ncons,p.ncons)}
+      ${exSel('ncons','Nível de consciência',EX_OPTS.ncons,p.ncons,'Se houver sedação contínua, informe também o RASS abaixo.')}
       ${exSel('pup','Pupilas',EX_OPTS.pup,p.pup)}
-      ${exRassRow(p.rass)}
-      ${exNum('gcs','Glasgow (GCS)',p.gcs)}
-      ${exSel('cam','CAM-ICU (delirium)',EX_OPTS.cam,p.cam)}
     </div>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${exRassRow(p.rass, sedContext)}
+    </div>
+    <div class="ex-grid">
+      ${exNum('gcs','Glasgow (GCS)',p.gcs)}
+      ${exSel('cam','CAM-ICU (delirium)',EX_OPTS.cam,p.cam,CAM_LEGEND)}
+    </div>
+    <details class="ex-legend" style="margin:0 12px 10px;"><summary>ver escala de Glasgow (GCS)</summary><div class="ex-legend-body">${exEsc(GCS_LEGEND)}</div></details>
   </div>
 
   <div class="ex-sec">
@@ -3230,10 +3432,11 @@ function renderExameForm(p){
       ${exSel('perf','Perfusão periférica',EX_OPTS.perf,p.perf)}
       ${exSel('edema','Edema',EX_OPTS.edema,p.edema)}
     </div>
-    <div class="ex-grid one" style="padding-top:0;">
-      ${exDvaRow(p.dva)}
-      ${exTxt('dva_doses','Doses das drogas vasoativas',p.dva_doses,'Ex: Noradrenalina 0,15 mcg/kg/min')}
-    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">💉 Medicações em infusão contínua <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0;">— vasoativas, sedação, bloqueador, outras</span></div>
+    ${exInfSection(infRows)}
   </div>
 
   <div class="ex-sec">
@@ -3250,8 +3453,9 @@ function renderExameForm(p){
     <div class="ex-grid">
       ${exSel('urina','Aspecto da diurese',EX_OPTS.urina,p.urina)}
       ${exNum('du','Débito urinário',p.du,'mL/h')}
-      ${exNum('bh','Balanço hídrico 24h',p.bh,'mL')}
+      ${exNum('bh','Balanço hídrico',p.bh,'mL')}
     </div>
+    <div class="ex-help" style="margin:0 12px 10px;">Débito e balanço às vezes só estão disponíveis parciais (não 24h) — informe o que tiver ou marque "s/ dado".</div>
   </div>
 
   <div class="ex-sec">
@@ -3263,22 +3467,12 @@ function renderExameForm(p){
   </div>
 
   <div class="ex-sec">
-    <div class="ex-sec-head">💉 Sedação / Bloqueio</div>
-    <div class="ex-grid">
-      ${exSel('bnm','Bloqueador neuromuscular',EX_OPTS.bnm,p.bnm)}
-    </div>
-    <div class="ex-grid one" style="padding-top:0;">
-      ${exTxt('sedacao_doses','Sedação / analgesia em uso',p.sedacao_doses,'Ex: Fentanil 5 ml/h, Midazolam 8 ml/h')}
-    </div>
-  </div>
-
-  <div class="ex-sec">
     <div class="ex-sec-head">🛡️ Profilaxias / Medicações</div>
     <div class="ex-grid">
-      ${exTxt('profilaxia_gastrica','Profilaxia gástrica',p.profilaxia_gastrica,'Ex: Pantoprazol 40mg 1x/dia')}
-      ${exTxt('profilaxia_tep','Profilaxia TEP/TVP',p.profilaxia_tep,'Ex: Enoxaparina 40mg SC 1x/dia')}
+      ${exPresetSel('profilaxia_gastrica','Profilaxia gástrica',EX_PRESET.profilaxia_gastrica,p.profilaxia_gastrica,'Medicação + dose + posologia')}
+      ${exPresetSel('profilaxia_tep','Profilaxia TEP/TVP',EX_PRESET.profilaxia_tep,p.profilaxia_tep,'Medicação + dose + posologia ou medida mecânica')}
     </div>
-    <div style="padding:0 12px 4px;">
+    <div style="padding:8px 12px 4px;">
       <label class="ex-label" style="margin-bottom:6px;">Antimicrobianos em uso</label>
       ${exAtbRows(p.atb)}
     </div>
@@ -3301,14 +3495,18 @@ function renderExameForm(p){
   ${isDiurnoAdm ? `<div class="ex-sec">
     <div class="ex-sec-head">📝 Contexto</div>
     <div class="ex-grid one">
-      ${exTxt('justificativa_uti','Justificativa de permanência em UTI',p.justificativa_uti,'Ex: Ventilação mecânica + droga vasoativa + instabilidade hemodinâmica')}
-      ${exTxt('demanda_familiar','Demanda familiar',p.demanda_familiar,'Ex: Familiares cientes da gravidade, sem questionamentos')}
+      <div class="ex-field full" id="exf_justificativa_uti">
+        <label class="ex-label">Justificativa de permanência em UTI ${exHas(p.justificativa_uti)?'<span class="ex-badge ok">do contexto</span>':'<span class="ex-badge miss" style="background:rgba(255,68,102,.18);color:var(--danger)">não encontrada</span>'}</label>
+        <input id="ex_justificativa_uti" type="text" class="ex-inp ${exHas(p.justificativa_uti)?'ok':'miss'}" value="${exHas(p.justificativa_uti)?exEsc(p.justificativa_uti):''}" placeholder="Ex: Ventilação mecânica + droga vasoativa + instabilidade hemodinâmica" oninput="exMark(this,'justificativa_uti')">
+        <div class="ex-help" id="ex_just_help" style="${exHas(p.justificativa_uti)?'':'color:var(--danger)'}">${exHas(p.justificativa_uti)?'Justificativa identificada no contexto — edite se necessário.':'⚠️ Não foram encontrados dados que justifiquem a permanência em UTI. Informe a justificativa ou avalie transferência para a enfermaria (será gerado um ALERTA na evolução).'}</div>
+      </div>
+      ${exPresetSel('demanda_familiar','Demanda familiar',EX_PRESET.demanda_familiar,(exHas(p.demanda_familiar)?p.demanda_familiar:EX_PRESET.demanda_familiar[0]),'Descreva a orientação/demanda da família')}
     </div>
   </div>` : ''}
   `;
 
   document.getElementById('exameBody').innerHTML = html;
-  document.getElementById('exameFootInfo').innerHTML = `<b style="color:var(--success)">${nFilled}</b> de ${nTotal} campos do exame extraídos automaticamente — revise os marcados em <span style="color:var(--warn)">laranja</span>.`;
+  document.getElementById('exameFootInfo').innerHTML = `<b style="color:var(--success)">${nFilled}</b> de ${nTotal} achados extraídos automaticamente — revise os campos em <span style="color:var(--warn)">laranja</span>. Campos sem sentido no caso: clique em "s/ dado".`;
   // sincronizar mostrar/ocultar VM conforme o select de O2
   document.getElementById('ex_o2').addEventListener('change', toggleVmFields);
 }
@@ -3318,21 +3516,51 @@ function toggleVmFields(){
   document.getElementById('ex_vmwrap').style.display = show ? 'block' : 'none';
 }
 
+// lê o valor de um select com presets+Outros
+function exGetPreset(key){
+  const sel = document.getElementById('ex_'+key); if(!sel) return '';
+  if (sel.value === '__outro__'){ const o = document.getElementById('ex_'+key+'_outro'); return o ? o.value.trim() : ''; }
+  return sel.value.trim();
+}
 // lê o formulário revisado de volta para um objeto
 function collectExame(){
-  const g = id => { const el = document.getElementById('ex_'+id); return el ? el.value.trim() : ''; };
+  const skipped = k => _exSkip.has(k);
+  const g = id => { if (skipped(id)) return ''; const el = document.getElementById('ex_'+id); return el ? String(el.value).trim() : ''; };
   const o = {};
-  ['ncons','pup','cam','padr','mv','adv','o2','vmodo','ritmo','aust','perf','edema','abd','rha','diet','urina','pele','lpp','bnm',
+  ['ncons','pup','cam','padr','mv','adv','o2','vmodo','ritmo','aust','perf','edema','abd','rha','diet','urina','pele','lpp',
    'gcs','fio2','peep','vc','ppico','fr','spo2','fc','pas','pad','tax','du','bh','saps3','peso',
-   'rass','dva_doses','sedacao_doses','profilaxia_gastrica','profilaxia_tep','alergias','justificativa_uti','demanda_familiar'
+   'rass','alergias','justificativa_uti'
   ].forEach(k => { const v = g(k); if (v) o[k] = v; });
-  o.dva = _exameDva.slice();
+  o.profilaxia_gastrica = exGetPreset('profilaxia_gastrica');
+  o.profilaxia_tep = exGetPreset('profilaxia_tep');
+  o.demanda_familiar = exGetPreset('demanda_familiar');
   o.dispositivos = (g('dispositivos') || '').split(',').map(s=>s.trim()).filter(Boolean);
   o.atb = [];
   document.querySelectorAll('#ex_atb_list .ex-atb-row').forEach(row => {
     const a = {}; row.querySelectorAll('input').forEach(inp => { const v = inp.value.trim(); if (v) a[inp.dataset.k] = v; });
     if (a.nome) o.atb.push(a);
   });
+  // infusões contínuas
+  o.semInfusao = !!(document.getElementById('ex_seminf') && document.getElementById('ex_seminf').checked);
+  o.infusoes = [];
+  if (!o.semInfusao){
+    document.querySelectorAll('#ex_inf_list .ex-inf-row').forEach(row => {
+      const id = row.querySelector('.ex-inf-drug').value;
+      if (id === 'outro'){
+        const nome = row.querySelector('.ex-inf-cname').value.trim();
+        const cdose = row.querySelector('.ex-inf-cdose').value.trim();
+        if (nome) o.infusoes.push({ cat:'outro', nome, dose:cdose });
+      } else if (id){
+        const d = EX_DRUGS.find(x=>x.id===id); if(!d) return;
+        const rate = row.querySelector('.ex-inf-vel').value.trim();
+        const dz = exDoseCalc(d.kind, d.conc, rate, document.getElementById('patientWeight').value);
+        const dose = (dz && dz!==null) ? exFmtDose(dz) : '';
+        o.infusoes.push({ cat:d.cat, nome:d.nome, rate, dose });
+      }
+    });
+  }
+  // lista de campos marcados como sem dado (N/D)
+  o._nd = [..._exSkip].map(k => EX_LABELS[k] || k);
   return o;
 }
 
@@ -3367,18 +3595,25 @@ function exameToBlock(o){
   add('AUSCULTA CARDIACA', o.aust);
   add('PERFUSAO PERIFERICA', o.perf);
   add('EDEMA', o.edema);
-  if (o.dva && o.dva.length) add('DROGAS VASOATIVAS', o.dva.join(', ') + (o.dva_doses?` (${o.dva_doses})`:''));
-  else if (o.dva_doses) add('DROGAS VASOATIVAS', o.dva_doses);
+  // infusões agrupadas por categoria (dose já calculada)
+  const lineFor = i => (i.cat==='outro')
+    ? [i.nome, i.dose].filter(Boolean).join(' ')
+    : i.nome + (i.rate?` ${i.rate} ML/H`:'') + (i.dose?` (${i.dose})`:'');
+  const byCat = { vaso:[], sed:[], bnm:[], outro:[] };
+  (o.infusoes||[]).forEach(i => { (byCat[i.cat]||byCat.outro).push(lineFor(i)); });
+  if (o.semInfusao){ L.push('DROGAS VASOATIVAS: SEM DROGA VASOATIVA'); L.push('SEDACAO/ANALGESIA: SEM SEDACAO CONTINUA'); }
+  if (byCat.vaso.length)  add('DROGAS VASOATIVAS / INOTROPICOS', byCat.vaso.join('; '));
+  if (byCat.sed.length)   add('SEDACAO / ANALGESIA', byCat.sed.join('; '));
+  if (byCat.bnm.length)   add('BLOQUEADOR NEUROMUSCULAR', byCat.bnm.join('; '));
+  if (byCat.outro.length) add('OUTRAS INFUSOES CONTINUAS', byCat.outro.join('; '));
   add('ABDOME', o.abd);
   add('RUIDOS HIDROAEREOS', o.rha);
   add('DIETA/NUTRICAO', o.diet);
   add('ASPECTO DA DIURESE', o.urina);
   add('DEBITO URINARIO', exHas(o.du)?o.du+' ML/H':'');
-  add('BALANCO HIDRICO 24H', exHas(o.bh)?o.bh+' ML':'');
+  add('BALANCO HIDRICO', exHas(o.bh)?o.bh+' ML':'');
   add('PELE', o.pele);
   add('LESAO POR PRESSAO', o.lpp);
-  add('SEDACAO/ANALGESIA', o.sedacao_doses);
-  add('BLOQUEADOR NEUROMUSCULAR', o.bnm);
   add('PROFILAXIA GASTRICA', o.profilaxia_gastrica);
   add('PROFILAXIA TEP/TVP', o.profilaxia_tep);
   if (o.atb && o.atb.length){
@@ -3389,8 +3624,16 @@ function exameToBlock(o){
   add('PESO', exHas(o.peso)?o.peso+' KG':'');
   add('SAPS III', o.saps3);
   add('ALERGIAS', o.alergias);
-  add('JUSTIFICATIVA DE PERMANENCIA EM UTI', o.justificativa_uti);
+  // justificativa de permanência (apenas diurno/admissao) — alerta se ausente
+  if (currentType === 'diurno' || currentType === 'admissao'){
+    if (exHas(o.justificativa_uti)) add('JUSTIFICATIVA DE PERMANENCIA EM UTI', o.justificativa_uti);
+    else L.push('JUSTIFICATIVA DE PERMANENCIA EM UTI: [ALERTA] NAO FORAM ENCONTRADOS DADOS QUE JUSTIFIQUEM A PERMANENCIA DO PACIENTE EM UTI — gerar ALERTA solicitando ao medico justificar a permanencia ou avaliar transferencia para a enfermaria.');
+  }
   add('DEMANDA FAMILIAR', o.demanda_familiar);
+  if (o._nd && o._nd.length){
+    L.push('');
+    L.push('CAMPOS MARCADOS COMO SEM DADO (N/D) PELO MEDICO — NAO usar [COMPLEMENTAR] nem inventar para estes; omitir do texto (ou registrar "nao avaliado" apenas se a semiologia do campo exigir): ' + o._nd.join(', ') + '.');
+  }
   return L.join('\n');
 }
 

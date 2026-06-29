@@ -35,8 +35,7 @@ CARDIOVASCULAR:
 - "aust": ["Bulhas rítmicas normofonéticas, sem sopros","Bulhas arrítmicas, sem sopros","Sopro sistólico","Bulhas hipofonéticas"]
 - "perf": ["TEC <3s, extremidades aquecidas","TEC 3–5s, extremidades frias","TEC >5s, livedo reticular","Extremidades cianóticas e frias"]
 - "edema": ["Ausente","+1 (tornozelos)","+2 (terço inferior das pernas)","+3 (joelhos)","+4 (coxas)","Anasarca"]
-- "dva": array com qualquer combinacao de ["Sem DVA","Noradrenalina","Adrenalina","Dobutamina","Vasopressina"] (incluir doses no campo dva_doses)
-- "dva_doses": string livre com as doses das DVA citadas (ex: "Noradrenalina 0,15 mcg/kg/min"), senao null
+(As drogas vasoativas em infusao continua vao no campo "infusoes" abaixo, NAO aqui.)
 
 ABDOME / DIGESTIVO:
 - "abd": ["Flácido, indolor","Distendido, timpânico","Dor difusa à palpação","Defesa abdominal","Rigidez em tábua (peritonismo)","Não avaliável (sedado)"]
@@ -51,9 +50,8 @@ PELE / TEGUMENTAR:
 - "pele": ["Normocorada, hidratada, anictérica","Pálida, hidratada, anictérica","Ictérica (+2/4)","Ictérica (+3/4 ou +4/4)","Cianótica periférica","Maculopapular (rash)","Petéquias / equimoses"]
 - "lpp": ["Ausente","Estágio I (hiperemia reativa)","Estágio II (perda da derme)","Estágio III (tecido subcutâneo)","Estágio IV (músculo/osso)"]
 
-SEDACAO / BLOQUEIO:
-- "bnm": ["Sem bloqueador neuromuscular","Cisatracurio","Rocuronio","Atracurio"] (bloqueador neuromuscular em uso), senao null
-- "sedacao_doses": string livre com sedativos/analgesicos em uso e doses (ex: "Fentanil 5 ml/h, Midazolam 8 ml/h"), senao null
+MEDICACOES EM INFUSAO CONTINUA:
+- "infusoes": array de objetos para CADA medicacao em bomba de infusao continua (vasoativas, inotropicos, sedacao, analgesia, bloqueador neuromuscular, amiodarona, etc.). Formato de cada item: {"nome": string (nome da droga, ex: "Noradrenalina","Fentanil","Cisatracurio"), "rate": string (velocidade em mL/h, SO o numero, se informada), "dose": string (dose ja informada pelo medico, ex: "0,15 mcg/kg/min", se houver)}. Se o medico informou a velocidade em mL/h, coloque em "rate". Se informou a dose final, coloque em "dose". Incluir TODAS as drogas em infusao continua. Se nenhuma, retornar [].
 
 PROFILAXIAS / MEDICACOES:
 - "profilaxia_gastrica": string livre (ex: "Pantoprazol 40mg 1x/dia"), senao null
