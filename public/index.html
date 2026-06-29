@@ -908,6 +908,41 @@
   .sofa-hist-table th { background: var(--surface2); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text2); }
   .sofa-hist-del { cursor: pointer; color: var(--danger, #e5484d); background: none; border: none; font-size: 13px; padding: 0 4px; }
 
+  /* ===== EXAME CLINICO ESTRUTURADO (formulario de revisao semiologico) ===== */
+  .ex-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .ex-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .ex-head-title { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .5px; }
+  .ex-head-sub { font-size: 10px; color: var(--text3); }
+  .ex-body { padding: 6px 16px 12px; }
+  .ex-sec { border: 1px solid var(--border); border-radius: 10px; margin-top: 12px; overflow: hidden; }
+  .ex-sec-head { background: var(--surface2); padding: 7px 12px; font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text2); display: flex; align-items: center; gap: 7px; }
+  .ex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 12px; }
+  .ex-grid.one { grid-template-columns: 1fr; }
+  .ex-field { display: flex; flex-direction: column; gap: 4px; }
+  .ex-field.full { grid-column: 1 / -1; }
+  .ex-label { font-size: 10px; color: var(--text3); display: flex; align-items: center; gap: 6px; letter-spacing: .3px; }
+  .ex-badge { font-size: 8px; padding: 1px 6px; border-radius: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+  .ex-badge.ok { background: rgba(0,204,136,.16); color: var(--success); }
+  .ex-badge.miss { background: rgba(255,170,0,.16); color: var(--warn); }
+  .ex-sel, .ex-inp { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: inherit; font-size: 12px; padding: 7px 9px; outline: none; width: 100%; }
+  .ex-sel:focus, .ex-inp:focus { border-color: var(--accent); }
+  .ex-sel.miss, .ex-inp.miss { border-color: rgba(255,170,0,.45); background: rgba(255,170,0,.04); }
+  .ex-sel.ok, .ex-inp.ok { border-color: rgba(0,204,136,.35); }
+  .ex-inp.vital-bad { border-color: var(--danger); background: rgba(255,68,102,.06); color: #ffb3c1; }
+  .ex-chiprow { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ex-chip { font-size: 11px; font-weight: 600; padding: 5px 11px; border-radius: 16px; cursor: pointer; background: var(--bg); color: var(--text2); border: 1px solid var(--border); transition: all .12s; user-select: none; }
+  .ex-chip:hover { border-color: var(--accent); }
+  .ex-chip.active { background: var(--accent); color: #001018; border-color: var(--accent); }
+  .ex-chip.rass.active { background: var(--noturno); border-color: var(--noturno); color: #fff; }
+  .ex-atb-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr .8fr .8fr auto; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .ex-atb-row .ex-inp { font-size: 11px; padding: 5px 7px; }
+  .ex-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface2); flex-wrap: wrap; }
+  .ex-foot-info { font-size: 11px; color: var(--text2); }
+  @media (max-width: 640px) {
+    .ex-grid { grid-template-columns: 1fr; }
+    .ex-atb-row { grid-template-columns: 1fr 1fr; }
+  }
+
   @media print {
     body * { visibility: hidden; }
     #fichaPrintArea, #fichaPrintArea * { visibility: visible; }
@@ -1293,6 +1328,25 @@
                 🗑️ Limpar
               </button>
               <button class="btn-generate" id="generateBtn" onclick="generateEvolution()">
+                <span>⚡</span> Gerar Evolução
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAINEL DE REVISÃO DO EXAME CLÍNICO ESTRUTURADO (etapa 2 do fluxo híbrido) -->
+        <div class="ex-panel" id="examePanel" style="display:none;">
+          <div class="ex-head">
+            <span style="font-size:18px;">🩺</span>
+            <span class="ex-head-title">Revisão do Exame Clínico</span>
+            <span class="ex-head-sub">— confira/ajuste os campos extraídos antes de gerar · <span style="color:var(--success);">●</span> extraído · <span style="color:var(--warn);">●</span> preencher</span>
+          </div>
+          <div class="ex-body" id="exameBody"></div>
+          <div class="ex-foot">
+            <span class="ex-foot-info" id="exameFootInfo"></span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-logout" onclick="cancelExameRevisao()" style="padding:0 16px;height:40px;border-radius:10px;">↩️ Voltar</button>
+              <button class="btn-generate" id="exameGerarBtn" onclick="confirmAndGenerate()">
                 <span>⚡</span> Gerar Evolução
               </button>
             </div>
@@ -1917,6 +1971,7 @@ function selectType(type) {
   document.getElementById('welcomeState').style.display = 'none';
   document.getElementById('evolutionForm').style.display = 'block';
   document.getElementById('outputPanel').style.display = 'none';
+  const _exP = document.getElementById('examePanel'); if (_exP) _exP.style.display = 'none';
   document.getElementById('updateSection').style.display = 'none';
   // Hide labs section if visible
   const _ls = document.getElementById('labsSection');
@@ -3005,6 +3060,346 @@ async function callDeepSeek(systemPrompt, messages) {
 }
 
 // ─── GENERATE ───
+// ═══════════════════════════════════════════════════════════════════
+//  EXAME CLÍNICO ESTRUTURADO — fluxo híbrido de 3 etapas
+//  1) médico cola texto livre  2) IA extrai + médico revisa  3) gera
+// ═══════════════════════════════════════════════════════════════════
+const EX_OPTS = {
+  ncons: ["Acordado e orientado (A+O×3)","Acordado e desorientado","Sonolento, responde a estímulo verbal","Torporoso, responde a dor","Comatoso, sem resposta","Sedoanalgesia profunda (RASS -4/-5)","Sedoanalgesia leve/moderada (RASS -2/-3)"],
+  pup: ["Isocóricas e fotorreagentes","Isocóricas, fotorreagentes lentas","Anisocoria","Midríase bilateral arreativa","Miose bilateral","Não avaliável"],
+  cam: ["Positivo","Negativo","Não avaliável"],
+  padr: ["Eupneico, sem esforço","Taquipneico, sem esforço ventilatório aumentado","Uso de musculatura acessória","Tiragem intercostal/supraesternal","Em VM — modo controlado","Em VM — modo espontâneo assistido","Em ventilação espontânea"],
+  mv: ["Presente e simétrico","Reduzido globalmente","Reduzido à direita","Reduzido à esquerda","Reduzido bilateralmente","Ausente à direita","Abolido bilateralmente"],
+  adv: ["Ausentes","Crepitações bibasais","Crepitações difusas","Sibilos difusos expiratórios","Roncos difusos","Atrito pleural"],
+  o2: ["Ar ambiente","Cateter nasal","Máscara de Venturi","CNAF (alto fluxo)","VNI (CPAP/BiPAP)","VM invasiva","Traqueostomia em VM"],
+  vmodo: ["VCV","PCV","PSV","SIMV"],
+  ritmo: ["Ritmo sinusal regular","Fibrilação atrial (ritmo irregularmente irregular)","Taquicardia sinusal","Bradicardia sinusal","Marca-passo em estimulação"],
+  aust: ["Bulhas rítmicas normofonéticas, sem sopros","Bulhas arrítmicas, sem sopros","Sopro sistólico","Bulhas hipofonéticas"],
+  perf: ["TEC <3s, extremidades aquecidas","TEC 3–5s, extremidades frias","TEC >5s, livedo reticular","Extremidades cianóticas e frias"],
+  edema: ["Ausente","+1 (tornozelos)","+2 (terço inferior das pernas)","+3 (joelhos)","+4 (coxas)","Anasarca"],
+  abd: ["Flácido, indolor","Distendido, timpânico","Dor difusa à palpação","Defesa abdominal","Rigidez em tábua (peritonismo)","Não avaliável (sedado)"],
+  rha: ["Presentes e normais","Aumentados","Reduzidos","Ausentes"],
+  diet: ["Dieta oral aceita bem","NPO — jejum indicado","SNE em nutrição enteral","Nutrição parenteral total"],
+  urina: ["Amarelo-clara (normal)","Concentrada (âmbar)","Oligúria (<0,5 mL/kg/h)","Hematúria macroscópica","Em TRS"],
+  pele: ["Normocorada, hidratada, anictérica","Pálida, hidratada, anictérica","Ictérica (+2/4)","Ictérica (+3/4 ou +4/4)","Cianótica periférica","Maculopapular (rash)","Petéquias / equimoses"],
+  lpp: ["Ausente","Estágio I (hiperemia reativa)","Estágio II (perda da derme)","Estágio III (tecido subcutâneo)","Estágio IV (músculo/osso)"],
+  bnm: ["Sem bloqueador neuromuscular","Cisatracurio","Rocuronio","Atracurio"],
+};
+const EX_RASS = ["-5","-4","-3","-2","-1","0","+1","+2","+3","+4"];
+const EX_DVA  = ["Sem DVA","Noradrenalina","Adrenalina","Dobutamina","Vasopressina"];
+// faixas de normalidade para alerta visual nos vitais [min, max]
+const EX_VITALS = { fc:[50,110], pas:[90,160], pad:[50,95], fr:[10,24], tax:[35.5,37.8], spo2:[92,100] };
+let _exameParsed = null;   // JSON cru devolvido pela extração
+let _exameDva = [];        // estado das chips de DVA (multi)
+
+function exEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function exHas(v){ return v!==null && v!==undefined && String(v).trim()!==''; }
+function exBadge(filled){ return filled ? '<span class="ex-badge ok">extraído</span>' : '<span class="ex-badge miss">preencher</span>'; }
+
+// campo SELECT com opções pré-definidas
+function exSel(key, label, opts, val){
+  const filled = exHas(val);
+  const cls = filled ? 'ok' : 'miss';
+  let o = `<option value="">— selecionar —</option>`;
+  opts.forEach(opt => { const sel = (opt === val) ? ' selected' : ''; o += `<option value="${exEsc(opt)}"${sel}>${exEsc(opt)}</option>`; });
+  return `<div class="ex-field"><label class="ex-label">${label} ${exBadge(filled)}</label><select id="ex_${key}" class="ex-sel ${cls}" onchange="this.classList.remove('miss');this.classList.add('ok')">${o}</select></div>`;
+}
+// campo numérico (com alerta de vital fora da faixa)
+function exNum(key, label, val, unit){
+  const filled = exHas(val);
+  const cls = filled ? 'ok' : 'miss';
+  const u = unit ? ` <span style="color:var(--text3)">(${unit})</span>` : '';
+  const vit = EX_VITALS[key] ? ` oninput="exVitalCheck(this,'${key}')"` : '';
+  const bad = (EX_VITALS[key] && filled && (parseFloat(val) < EX_VITALS[key][0] || parseFloat(val) > EX_VITALS[key][1])) ? ' vital-bad' : '';
+  return `<div class="ex-field"><label class="ex-label">${label}${u} ${exBadge(filled)}</label><input id="ex_${key}" type="number" step="any" class="ex-inp ${cls}${bad}" value="${filled?exEsc(val):''}"${vit}></div>`;
+}
+// campo texto livre
+function exTxt(key, label, val, ph){
+  const filled = exHas(val);
+  const cls = filled ? 'ok' : 'miss';
+  return `<div class="ex-field full"><label class="ex-label">${label} ${exBadge(filled)}</label><input id="ex_${key}" type="text" class="ex-inp ${cls}" value="${filled?exEsc(val):''}" placeholder="${ph?exEsc(ph):''}"></div>`;
+}
+function exVitalCheck(el, key){
+  const r = EX_VITALS[key]; const v = parseFloat(el.value);
+  el.classList.toggle('vital-bad', el.value!=='' && (v < r[0] || v > r[1]));
+  el.classList.remove('miss'); el.classList.add('ok');
+}
+
+// linha de chips RASS (seleção única)
+function exRassRow(val){
+  const filled = exHas(val);
+  const chips = EX_RASS.map(r => `<span class="ex-chip rass${r===val?' active':''}" onclick="exPickRass(this,'${r}')">${r}</span>`).join('');
+  return `<div class="ex-field full"><label class="ex-label">RASS ${exBadge(filled)}</label><div class="ex-chiprow" id="ex_rass_row">${chips}</div><input type="hidden" id="ex_rass" value="${filled?exEsc(val):''}"></div>`;
+}
+function exPickRass(el, r){
+  document.querySelectorAll('#ex_rass_row .ex-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('ex_rass').value = r;
+}
+// linha de chips DVA (seleção múltipla; "Sem DVA" é exclusivo)
+function exDvaRow(arr){
+  _exameDva = Array.isArray(arr) ? arr.slice() : [];
+  const filled = _exameDva.length > 0;
+  const chips = EX_DVA.map(d => `<span class="ex-chip${_exameDva.includes(d)?' active':''}" onclick="exToggleDva(this,'${exEsc(d)}')">${exEsc(d)}</span>`).join('');
+  return `<div class="ex-field full"><label class="ex-label">Drogas vasoativas ${exBadge(filled)}</label><div class="ex-chiprow" id="ex_dva_row">${chips}</div></div>`;
+}
+function exToggleDva(el, d){
+  if (d === 'Sem DVA'){
+    _exameDva = el.classList.contains('active') ? [] : ['Sem DVA'];
+  } else {
+    _exameDva = _exameDva.filter(x => x !== 'Sem DVA');
+    if (_exameDva.includes(d)) _exameDva = _exameDva.filter(x => x !== d);
+    else _exameDva.push(d);
+  }
+  // re-render estados
+  document.querySelectorAll('#ex_dva_row .ex-chip').forEach(c => {
+    c.classList.toggle('active', _exameDva.includes(c.textContent));
+  });
+}
+
+// linhas dinâmicas de ATB
+function exAtbRows(arr){
+  const rows = (Array.isArray(arr)&&arr.length?arr:[]).map(a=>exAtbRow(a)).join('');
+  return `<div id="ex_atb_list">${rows}</div><button class="rx-add" onclick="exAddAtb()">+ Antimicrobiano</button>`;
+}
+function exAtbRow(a){
+  a = a||{};
+  return `<div class="ex-atb-row">
+    <input class="ex-inp" placeholder="Nome" value="${exEsc(a.nome||'')}" data-k="nome">
+    <input class="ex-inp" placeholder="Dose" value="${exEsc(a.dose||'')}" data-k="dose">
+    <input class="ex-inp" placeholder="Posologia" value="${exEsc(a.posologia||'')}" data-k="posologia">
+    <input class="ex-inp" placeholder="DI/Dx" value="${exEsc(a.di||'')}" data-k="di">
+    <input class="ex-inp" placeholder="Término" value="${exEsc(a.dt||'')}" data-k="dt">
+    <button class="rx-del" onclick="this.parentElement.remove()">✕</button>
+  </div>`;
+}
+function exAddAtb(){ document.getElementById('ex_atb_list').insertAdjacentHTML('beforeend', exAtbRow({})); }
+
+// monta todo o formulário a partir do JSON extraído
+function renderExameForm(p){
+  p = p || {};
+  const vm = (p.o2 === 'VM invasiva' || p.o2 === 'Traqueostomia em VM');
+  const isDiurnoAdm = (currentType === 'diurno' || currentType === 'admissao');
+  let nFilled = 0, nTotal = 0;
+  const count = v => { nTotal++; if (exHas(v)) nFilled++; };
+  ['ncons','rass','gcs','pup','cam','o2','padr','mv','adv','spo2','fr','fc','pas','pad','ritmo','aust','perf','edema','abd','rha','diet','urina','du','bh','tax','pele','lpp'].forEach(k=>count(p[k]));
+
+  const html = `
+  <div class="ex-sec">
+    <div class="ex-sec-head">🧠 Neurológico</div>
+    <div class="ex-grid">
+      ${exSel('ncons','Nível de consciência',EX_OPTS.ncons,p.ncons)}
+      ${exSel('pup','Pupilas',EX_OPTS.pup,p.pup)}
+      ${exRassRow(p.rass)}
+      ${exNum('gcs','Glasgow (GCS)',p.gcs)}
+      ${exSel('cam','CAM-ICU (delirium)',EX_OPTS.cam,p.cam)}
+    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">🫁 Respiratório / Ventilatório</div>
+    <div class="ex-grid">
+      ${exSel('o2','Suporte de O2',EX_OPTS.o2,p.o2)}
+      ${exSel('padr','Padrão respiratório',EX_OPTS.padr,p.padr)}
+      ${exSel('mv','Murmúrio vesicular',EX_OPTS.mv,p.mv)}
+      ${exSel('adv','Ruídos adventícios',EX_OPTS.adv,p.adv)}
+      ${exNum('spo2','SpO2',p.spo2,'%')}
+      ${exNum('fr','FR',p.fr,'irpm')}
+    </div>
+    <div id="ex_vmwrap" style="display:${vm?'block':'none'};border-top:1px dashed var(--border);">
+      <div class="ex-sec-head" style="background:transparent;color:var(--accent);">⚙️ Parâmetros de Ventilação Mecânica</div>
+      <div class="ex-grid">
+        ${exSel('vmodo','Modo',EX_OPTS.vmodo,p.vmodo)}
+        ${exNum('fio2','FiO2',p.fio2,'%')}
+        ${exNum('peep','PEEP',p.peep,'cmH2O')}
+        ${exNum('vc','Volume corrente',p.vc,'mL')}
+        ${exNum('ppico','Pressão de pico',p.ppico,'cmH2O')}
+      </div>
+    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">❤️ Cardiovascular</div>
+    <div class="ex-grid">
+      ${exNum('fc','FC',p.fc,'bpm')}
+      ${exNum('tax','Temperatura',p.tax,'°C')}
+      ${exNum('pas','PA sistólica',p.pas,'mmHg')}
+      ${exNum('pad','PA diastólica',p.pad,'mmHg')}
+      ${exSel('ritmo','Ritmo',EX_OPTS.ritmo,p.ritmo)}
+      ${exSel('aust','Ausculta cardíaca',EX_OPTS.aust,p.aust)}
+      ${exSel('perf','Perfusão periférica',EX_OPTS.perf,p.perf)}
+      ${exSel('edema','Edema',EX_OPTS.edema,p.edema)}
+    </div>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${exDvaRow(p.dva)}
+      ${exTxt('dva_doses','Doses das drogas vasoativas',p.dva_doses,'Ex: Noradrenalina 0,15 mcg/kg/min')}
+    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">🩻 Abdome / Digestivo</div>
+    <div class="ex-grid">
+      ${exSel('abd','Abdome',EX_OPTS.abd,p.abd)}
+      ${exSel('rha','Ruídos hidroaéreos',EX_OPTS.rha,p.rha)}
+      ${exSel('diet','Dieta / nutrição',EX_OPTS.diet,p.diet)}
+    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">💧 Renal / Volemia</div>
+    <div class="ex-grid">
+      ${exSel('urina','Aspecto da diurese',EX_OPTS.urina,p.urina)}
+      ${exNum('du','Débito urinário',p.du,'mL/h')}
+      ${exNum('bh','Balanço hídrico 24h',p.bh,'mL')}
+    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">🩹 Pele / Tegumentar</div>
+    <div class="ex-grid">
+      ${exSel('pele','Pele / coloração',EX_OPTS.pele,p.pele)}
+      ${exSel('lpp','Lesão por pressão',EX_OPTS.lpp,p.lpp)}
+    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">💉 Sedação / Bloqueio</div>
+    <div class="ex-grid">
+      ${exSel('bnm','Bloqueador neuromuscular',EX_OPTS.bnm,p.bnm)}
+    </div>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${exTxt('sedacao_doses','Sedação / analgesia em uso',p.sedacao_doses,'Ex: Fentanil 5 ml/h, Midazolam 8 ml/h')}
+    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">🛡️ Profilaxias / Medicações</div>
+    <div class="ex-grid">
+      ${exTxt('profilaxia_gastrica','Profilaxia gástrica',p.profilaxia_gastrica,'Ex: Pantoprazol 40mg 1x/dia')}
+      ${exTxt('profilaxia_tep','Profilaxia TEP/TVP',p.profilaxia_tep,'Ex: Enoxaparina 40mg SC 1x/dia')}
+    </div>
+    <div style="padding:0 12px 4px;">
+      <label class="ex-label" style="margin-bottom:6px;">Antimicrobianos em uso</label>
+      ${exAtbRows(p.atb)}
+    </div>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${exTxt('dispositivos','Dispositivos invasivos (separar por vírgula)',(Array.isArray(p.dispositivos)?p.dispositivos.join(', '):p.dispositivos),'Ex: CVC jugular D, TOT, SVD, PAI')}
+    </div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">📊 Escores / Identificação</div>
+    <div class="ex-grid">
+      ${exNum('peso','Peso',p.peso,'kg')}
+      ${exNum('saps3','SAPS III',p.saps3,'pontos')}
+    </div>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${exTxt('alergias','Alergias',p.alergias,'Ex: Nega alergias / Dipirona')}
+    </div>
+  </div>
+
+  ${isDiurnoAdm ? `<div class="ex-sec">
+    <div class="ex-sec-head">📝 Contexto</div>
+    <div class="ex-grid one">
+      ${exTxt('justificativa_uti','Justificativa de permanência em UTI',p.justificativa_uti,'Ex: Ventilação mecânica + droga vasoativa + instabilidade hemodinâmica')}
+      ${exTxt('demanda_familiar','Demanda familiar',p.demanda_familiar,'Ex: Familiares cientes da gravidade, sem questionamentos')}
+    </div>
+  </div>` : ''}
+  `;
+
+  document.getElementById('exameBody').innerHTML = html;
+  document.getElementById('exameFootInfo').innerHTML = `<b style="color:var(--success)">${nFilled}</b> de ${nTotal} campos do exame extraídos automaticamente — revise os marcados em <span style="color:var(--warn)">laranja</span>.`;
+  // sincronizar mostrar/ocultar VM conforme o select de O2
+  document.getElementById('ex_o2').addEventListener('change', toggleVmFields);
+}
+function toggleVmFields(){
+  const v = document.getElementById('ex_o2').value;
+  const show = (v === 'VM invasiva' || v === 'Traqueostomia em VM');
+  document.getElementById('ex_vmwrap').style.display = show ? 'block' : 'none';
+}
+
+// lê o formulário revisado de volta para um objeto
+function collectExame(){
+  const g = id => { const el = document.getElementById('ex_'+id); return el ? el.value.trim() : ''; };
+  const o = {};
+  ['ncons','pup','cam','padr','mv','adv','o2','vmodo','ritmo','aust','perf','edema','abd','rha','diet','urina','pele','lpp','bnm',
+   'gcs','fio2','peep','vc','ppico','fr','spo2','fc','pas','pad','tax','du','bh','saps3','peso',
+   'rass','dva_doses','sedacao_doses','profilaxia_gastrica','profilaxia_tep','alergias','justificativa_uti','demanda_familiar'
+  ].forEach(k => { const v = g(k); if (v) o[k] = v; });
+  o.dva = _exameDva.slice();
+  o.dispositivos = (g('dispositivos') || '').split(',').map(s=>s.trim()).filter(Boolean);
+  o.atb = [];
+  document.querySelectorAll('#ex_atb_list .ex-atb-row').forEach(row => {
+    const a = {}; row.querySelectorAll('input').forEach(inp => { const v = inp.value.trim(); if (v) a[inp.dataset.k] = v; });
+    if (a.nome) o.atb.push(a);
+  });
+  return o;
+}
+
+// transforma o exame revisado num bloco de texto autoritativo para o prompt
+function exameToBlock(o){
+  const L = [];
+  const add = (label, val) => { if (exHas(val)) L.push(`${label}: ${val}`); };
+  add('NIVEL DE CONSCIENCIA', o.ncons);
+  add('RASS', o.rass);
+  add('GLASGOW (GCS)', o.gcs);
+  add('PUPILAS', o.pup);
+  add('CAM-ICU', o.cam);
+  add('SUPORTE DE O2', o.o2);
+  add('PADRAO RESPIRATORIO', o.padr);
+  add('MURMURIO VESICULAR', o.mv);
+  add('RUIDOS ADVENTICIOS', o.adv);
+  add('SPO2', exHas(o.spo2)?o.spo2+'%':'');
+  add('FR', exHas(o.fr)?o.fr+' IRPM':'');
+  if (o.vmodo||o.fio2||o.peep||o.vc||o.ppico){
+    const vmp = [];
+    if (o.vmodo) vmp.push(`MODO ${o.vmodo}`);
+    if (o.fio2) vmp.push(`FIO2 ${o.fio2}%`);
+    if (o.peep) vmp.push(`PEEP ${o.peep}`);
+    if (o.vc) vmp.push(`VC ${o.vc} ML`);
+    if (o.ppico) vmp.push(`PPICO ${o.ppico}`);
+    if (vmp.length) L.push('PARAMETROS DE VM: ' + vmp.join(', '));
+  }
+  add('FC', exHas(o.fc)?o.fc+' BPM':'');
+  if (exHas(o.pas)||exHas(o.pad)) L.push(`PA: ${o.pas||'?'} X ${o.pad||'?'} MMHG`);
+  add('TAX', exHas(o.tax)?o.tax+'°C':'');
+  add('RITMO', o.ritmo);
+  add('AUSCULTA CARDIACA', o.aust);
+  add('PERFUSAO PERIFERICA', o.perf);
+  add('EDEMA', o.edema);
+  if (o.dva && o.dva.length) add('DROGAS VASOATIVAS', o.dva.join(', ') + (o.dva_doses?` (${o.dva_doses})`:''));
+  else if (o.dva_doses) add('DROGAS VASOATIVAS', o.dva_doses);
+  add('ABDOME', o.abd);
+  add('RUIDOS HIDROAEREOS', o.rha);
+  add('DIETA/NUTRICAO', o.diet);
+  add('ASPECTO DA DIURESE', o.urina);
+  add('DEBITO URINARIO', exHas(o.du)?o.du+' ML/H':'');
+  add('BALANCO HIDRICO 24H', exHas(o.bh)?o.bh+' ML':'');
+  add('PELE', o.pele);
+  add('LESAO POR PRESSAO', o.lpp);
+  add('SEDACAO/ANALGESIA', o.sedacao_doses);
+  add('BLOQUEADOR NEUROMUSCULAR', o.bnm);
+  add('PROFILAXIA GASTRICA', o.profilaxia_gastrica);
+  add('PROFILAXIA TEP/TVP', o.profilaxia_tep);
+  if (o.atb && o.atb.length){
+    const atbTxt = o.atb.map(a => [a.nome, a.dose, a.posologia, a.di?`INICIO ${a.di}`:'', a.dt?`TERMINO ${a.dt}`:''].filter(Boolean).join(' ')).join('; ');
+    add('ANTIMICROBIANOS EM USO', atbTxt);
+  }
+  if (o.dispositivos && o.dispositivos.length) add('DISPOSITIVOS INVASIVOS', o.dispositivos.join(', '));
+  add('PESO', exHas(o.peso)?o.peso+' KG':'');
+  add('SAPS III', o.saps3);
+  add('ALERGIAS', o.alergias);
+  add('JUSTIFICATIVA DE PERMANENCIA EM UTI', o.justificativa_uti);
+  add('DEMANDA FAMILIAR', o.demanda_familiar);
+  return L.join('\n');
+}
+
+function cancelExameRevisao(){
+  document.getElementById('examePanel').style.display = 'none';
+  _exameParsed = null;
+}
+
+// ETAPA 1 → 2: valida, extrai com IA e mostra o formulário de revisão
 async function generateEvolution() {
   if (!currentType) { showToast('Selecione um tipo de evolução', 'error'); return; }
 
@@ -3012,6 +3407,64 @@ async function generateEvolution() {
   const newInfo = document.getElementById('newInfoInput')?.value.trim() || '';
   if (!input && !newInfo) { showToast('Insira os dados clínicos', 'error'); return; }
 
+  // DIARISTA não possui exame clínico semiológico detalhado no modelo → gera direto
+  if (currentType === 'diarista') { return _doGenerate(null); }
+
+  const btn = document.getElementById('generateBtn');
+  const loading = document.getElementById('loadingBar');
+  btn.disabled = true;
+  btn.innerHTML = '<span>🩺</span> Analisando exame...';
+  loading.style.display = 'block';
+
+  // texto-fonte para extração = base + novas infos + anexos
+  const partes = [];
+  if (input) partes.push(input);
+  if (newInfo) partes.push('NOVAS INFORMACOES / ATUALIZACOES:\n' + newInfo);
+  if (evoAttachments.length) partes.push('ANEXOS (OCR):\n' + evoAttachments.map(a => `[${a.name}]:\n${a.content}`).join('\n\n'));
+  const fonte = partes.join('\n\n');
+
+  try {
+    const res = await fetch('/api/parse-exame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: fonte }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(()=>({}));
+      throw new Error(e.error || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    _exameParsed = data.exame || {};
+    // pré-preencher peso do exame no campo de peso, se vazio
+    if (_exameParsed.peso && !document.getElementById('patientWeight').value.trim()){
+      document.getElementById('patientWeight').value = _exameParsed.peso;
+    }
+    renderExameForm(_exameParsed);
+    document.getElementById('examePanel').style.display = 'block';
+    document.getElementById('examePanel').scrollIntoView({ behavior:'smooth', block:'start' });
+    showToast('Exame extraído — revise antes de gerar', 'success');
+  } catch (err) {
+    showToast('Erro na extração: ' + err.message + ' — gerando direto', 'error');
+    return _doGenerate(null);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>⚡</span> Gerar Evolução';
+    loading.style.display = 'none';
+  }
+}
+
+// ETAPA 3: lê o formulário revisado e gera a evolução com os dados confirmados
+function confirmAndGenerate(){
+  const o = collectExame();
+  const block = exameToBlock(o);
+  document.getElementById('examePanel').style.display = 'none';
+  return _doGenerate(block);
+}
+
+// geração propriamente dita (recebe o bloco de exame estruturado já revisado)
+async function _doGenerate(structuredBlock) {
+  const input   = document.getElementById('clinicalInput').value.trim();
+  const newInfo = document.getElementById('newInfoInput')?.value.trim() || '';
   const weight = document.getElementById('patientWeight').value || '';
   const btn = document.getElementById('generateBtn');
   const loading = document.getElementById('loadingBar');
@@ -3075,7 +3528,13 @@ COMO USAR ESTA FICHA (para SOFA e SAPS III automaticos):
 ATENCAO — SEM FICHA DE EXAMES: nao existe ficha de exames laboratoriais salva para "${patNome || 'este paciente'}". Para SOFA e SAPS III, so usar exames que estejam nos anexos ou nos dados clinicos acima. Se faltarem os exames necessarios, aplicar as regras "SOFA NAO CALCULAVEL" / "SAPS III NAO CALCULAVEL" listando o que falta — NUNCA inventar nem usar valores antigos.
 ========================================
 `}
+${structuredBlock ? `========================================
+🩺 EXAME CLINICO ESTRUTURADO (REVISADO E CONFIRMADO PELO MEDICO — FONTE PRIORITARIA):
+Estes campos foram extraidos do texto e REVISADOS pelo medico. Use-os como a fonte AUTORITATIVA para montar a secao EXAME CLINICO (e os campos correspondentes: SEDACAO/ANALGESIA, BLOQUEADOR NEUROMUSCULAR, DROGAS VASOATIVAS, DISPOSITIVOS INVASIVOS, PROFILAXIAS, ANTIMICROBIANOS EM USO, NUTRICAO, ALERGIAS, JUSTIFICATIVA DE PERMANENCIA, DEMANDA FAMILIAR).
+REGRAS: reproduzir EXATAMENTE estes valores; converter para o formato/secoes do modelo; NAO contradizer nem inventar campos que aqui estao ausentes (para os ausentes, aplicar a regra [COMPLEMENTAR]). Manter coerencia clinica (Regra 22).
+${structuredBlock}
 ========================================
+` : ''}========================================
 ⚠️ NOVAS INFORMACOES / ATUALIZACOES DO PLANTAO (PRIORIDADE MAXIMA):
 Estes dados sao os mais recentes e SUBSTITUEM qualquer valor conflitante dos dados base.
 Usar EXATAMENTE os valores abaixo para FC, PA, FR, SAT, RASS, GCS, doses, gasometria e qualquer outro parametro listado aqui.
@@ -3821,6 +4280,7 @@ function clearAll() {
   conversationHistory = [];
   lastRawOutput = '';
   document.getElementById('outputPanel').style.display = 'none';
+  const _exP2 = document.getElementById('examePanel'); if (_exP2) { _exP2.style.display = 'none'; _exameParsed = null; }
   document.getElementById('updateSection').style.display = 'none';
   document.getElementById('outputContent').innerHTML = '';
 
@@ -5271,15 +5731,16 @@ Produza um resumo OBJETIVO e TELEGRAFICO, em PORTUGUES, em MAIUSCULAS com acentu
 
 Gere UM BLOCO POR PACIENTE, na MESMA ORDEM fornecida. NAO mencione leitos vagos (eles serao inseridos automaticamente depois). Cada bloco no formato:
 LEITO X — NOME (idade se houver):
-1. DIAGNOSTICOS: principais diagnosticos/hipoteses ativos.
-2. CONDICAO: ESTAVEL ou INSTAVEL; em DROGA VASOATIVA (qual + dose) ou SEM DVA; SEDACAO (qual + RASS) ou SEM SEDACAO; SUPORTE VENTILATORIO (ar ambiente / cateter O2 / mascara / VNI / INTUBADO em VM com parametros); NIVEL DE CONSCIENCIA ou GLASGOW; SOFA se houver; dispositivos invasivos relevantes (CVC, PAI, SVD, SNE, etc.).
-3. INTERCORRENCIAS DO PLANTAO ${tl}: eventos relevantes ocorridos durante o PLANTAO ${tl} (se houver).
-4. CONDUTAS NOVAS / MUDANCAS: o que mudou (ATB iniciado/ajustado, DVA, procedimentos, etc.).
-5. EXAMES/INTERCONSULTAS PENDENTES: o que esta aguardando.
-6. VIGIAR / PENDENCIAS: o que o plantonista que entra deve observar de perto.
+1. DIAGNOSTICOS: diagnosticos/hipoteses ATIVOS, com o CID-10 entre parenteses quando disponivel na evolucao.
+2. CONDICAO ATUAL: ESTAVEL ou INSTAVEL; DROGA VASOATIVA (qual + dose) ou SEM DVA; VENTILACAO (ar ambiente / cateter O2 / mascara / VNI / INTUBADO em VM com MODO + parametros FiO2/PEEP / TRAQUEOSTOMIA); SEDACAO (qual) e NIVEL DE CONSCIENCIA ou RASS/GLASGOW; SOFA se houver; dispositivos invasivos relevantes (CVC, PAI, SVD, SNE, etc.).
+3. MEDIDAS PRINCIPAIS DO PLANTAO ${tl}: o que foi FEITO/MUDADO neste plantao (ATB iniciado/ajustado, ajuste de DVA, procedimentos, intercorrencias e como foram conduzidas). Se nada relevante, escrever "SEM INTERCORRENCIAS NO PLANTAO ${tl}".
+4. EXAMES RELEVANTES: resultados de exames importantes do dia (laboratoriais/imagem) que mudam conduta. Se nao houver, omitir o conteudo apos os dois pontos.
+5. INTERCONSULTAS ATIVAS: especialidades envolvidas e o status/pendencia de cada uma. Se nenhuma, escrever "SEM INTERCONSULTAS ATIVAS".
+6. PENDENCIAS: o que esta AGUARDANDO (exames, resultados, laudos, procedimentos, vaga, parecer).
+7. ALERTAS: o que o plantonista que ENTRA deve VIGIAR de perto (riscos, metas, sinais de alarme, titulacao de drogas, proximos passos previstos).
 
 Regras de formato:
-- NUMERAR os 6 topicos de 1 a 6, EXATAMENTE como acima. NAO usar hifen "-" antes dos topicos.
+- NUMERAR os 7 topicos de 1 a 7, EXATAMENTE como acima. NAO usar hifen "-" antes dos topicos.
 - Cada topico em sua propria linha. Separar os pacientes com uma linha "----------------------------------------".
 - Conciso, frases curtas. NAO copiar a evolucao inteira — destilar o essencial para o plantao.
 - Se a evolucao indicar instabilidade (uso de DVA, ventilacao mecanica, RASS profundo, SOFA alto, lactato elevado), classificar como INSTAVEL e destacar.
