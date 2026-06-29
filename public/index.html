@@ -2590,14 +2590,16 @@ REGRAS CLINICAS OBRIGATORIAS:
 10b. ANTECEDENTES PATOLOGICOS E CIRURGICOS - adicionar o CID-10 entre parenteses ao final de CADA antecedente/comorbidade, no formato "(CID XXX)". Um por linha. Exemplos: HAS (CID I10), DM TIPO 2 (CID E11.9), ASMA (CID J45.9), DPOC (CID J44.9), AVC PREVIO (CID I69.4), DOENCA RENAL CRONICA (CID N18.9), GLAUCOMA (CID H40.9), DOENCA RENAL POLICISTICA (CID Q61.3), ANGINA INSTAVEL (CID I20.0). Procedimentos cirurgicos previos sem doenca associada podem ficar sem CID.
 
 11. EXAMES DE MAIOR IMPORTANCIA - Ao listar, perguntar nas PENDENCIAS se ha atualizacoes de resultados.
+    ORDEM CRONOLOGICA OBRIGATORIA: ordenar os exames pela DATA, do MAIS ANTIGO para o MAIS NOVO (ascendente). O mesmo vale para INTERCONSULTAS (ordenar pela data, mais antiga primeiro). Exames/pareceres sem data vao ao final.
 
 12. SE DADOS INCOMPLETOS DO EXAME CLINICO - completar com padrao e marcar: [DADO PARCIAL - CONFIRMAR]
 
 13. UM ITEM POR LINHA (NUNCA em linha unica) - aplicar OBRIGATORIAMENTE em:
     HIPOTESES DIAGNOSTICAS: cada hipotese em sua propria linha.
     ANTECEDENTES PATOLOGICOS E CIRURGICOS: cada antecedente em sua propria linha.
-    MEDICACOES DE USO CONTINUO: cada medicacao em sua propria linha.
-    ANTIMICROBIANOS EM USO e ANTIMICROBIANOS JA UTILIZADOS: cada item em sua propria linha.
+    MEDICACOES DE USO CONTINUO: cada medicacao em sua propria linha (um abaixo do outro). NUNCA separar por barra "/" nem por virgula. EXCECAO: medicamento combinado num unico produto (ex: BENICAR ANLO (OLMESARTANA + ANLODIPINO)) fica numa linha so.
+    ANTIMICROBIANOS EM USO e ANTIMICROBIANOS JA UTILIZADOS: cada esquema/medicamento em sua PROPRIA LINHA, um abaixo do outro. NUNCA juntar varios numa unica linha nem separar por "/" ou virgula. EXCECAO: combinacao fixa num unico produto (ex: TAZOCIN (PIPERACILINA + TAZOBACTAM)). Manter as datas (DI/DT ou periodo) ao lado de cada linha.
+    REGRA DE COPIA/EXPORTACAO: estas listas DEVEM permanecer com um item por linha tambem no texto copiado/exportado — garantir uma quebra de linha real entre cada item.
 
 13b. NOME COMERCIAL → PRINCIPIO ATIVO: SEMPRE que uma medicacao aparecer por NOME COMERCIAL/MARCA (em QUALQUER parte do texto: MEDICACOES DE USO CONTINUO, ANTIMICROBIANOS, PROFILAXIAS, SEDACAO/ANALGESIA, DROGAS VASOATIVAS, CONDUTAS, etc.), acrescentar o PRINCIPIO ATIVO entre parenteses logo apos o nome comercial. Manter o nome comercial e a dose/posologia. Exemplos:
     BENICAR ANLO 40 MG (1-0-0) → BENICAR ANLO (OLMESARTANA + ANLODIPINO) 40 MG (1-0-0)
@@ -2609,7 +2611,7 @@ REGRAS CLINICAS OBRIGATORIAS:
     Se o nome ja for o principio ativo (ex: OMEPRAZOL, ENOXAPARINA, NORADRENALINA), NAO duplicar. Se houver duvida razoavel sobre o principio ativo, marcar "(PRINCIPIO ATIVO - CONFIRMAR)" em vez de inventar.
     OBRIGATORIO E SEM EXCECAO: aplicar a TODAS as medicacoes por nome comercial, em TODAS as secoes — nao deixar NENHUMA marca sem o principio ativo entre parenteses. Antes de finalizar, RELER a evolucao e conferir cada medicacao: se for marca/nome comercial e estiver SEM "(principio ativo)", acrescentar. Outros exemplos: PURAN T4 (LEVOTIROXINA), GLIFAGE (METFORMINA), AAS (ACIDO ACETILSALICILICO), CLEXANE (ENOXAPARINA), DORMONID (MIDAZOLAM), PRECEDEX (DEXMEDETOMIDINA), DIPRIVAN (PROPOFOL), TYLENOL (PARACETAMOL), NOVALGINA (DIPIRONA), TIENAM (IMIPENEM + CILASTATINA), ROCEFIN (CEFTRIAXONA), AVALOX (MOXIFLOXACINO), VANCOCINA (VANCOMICINA), TRACRIUM (ATRACURIO).
 
-14. EXAMES DE MAIOR IMPORTANCIA - FORMATO: NOME DO EXAME (em destaque/negrito), seguido da DATA quando houver, depois ":" e a DESCRICAO/resultado (a descricao NAO fica em negrito). UM exame por linha.
+14. EXAMES DE MAIOR IMPORTANCIA - FORMATO: NOME DO EXAME (em destaque/negrito), seguido da DATA quando houver, depois ":" e a DESCRICAO/resultado (a descricao NAO fica em negrito). UM exame por linha, em ORDEM CRONOLOGICA (mais antigo primeiro). INTERCONSULTAS seguem o mesmo: ESPECIALIDADE + DATA: avaliacao/conduta, uma por linha, em ordem cronologica.
     Ex: HEMOGRAMA 02/06/2026: HB 9,1 / LEUCOCITOS 14000 / PLAQUETAS 180000
 
 15. INTERCONSULTAS - FORMATO: ESPECIALIDADE seguida da DATA quando houver (em destaque/negrito), depois ":" e a avaliacao/conduta (NAO em negrito). UMA interconsulta por linha.
@@ -2845,8 +2847,8 @@ ADMISSAO UTI: DATA:
 ------------- UTI GERAL [escolher I ou II conforme a informacao; se nao houver, escrever [COMPLEMENTAR: informar se e UTI GERAL I ou II]] -------------
 ALERGIAS:
 SAPS III: (73 MORTALIDADE A.S 62,24%)
-${pesoLinha}
 SOFA: [calcular o escore SOFA do dia conforme a regra; se faltarem exames laboratoriais da data atual, escrever a mensagem listando quais faltam]
+${pesoLinha}
 HIPOTESES DIAGNOSTICAS:
 [cada hipotese em sua propria linha, com o CID-10 entre parenteses ao final de TODAS, ex: "(CID A41.9)"]
 HISTORIA DA DOENCA ATUAL:
@@ -2894,8 +2896,8 @@ ADMISSAO UTI: DATA:
 ------------- UTI GERAL [escolher I ou II conforme a informacao; se nao houver, escrever [COMPLEMENTAR: informar se e UTI GERAL I ou II]] -------------
 ALERGIAS:
 SAPS III: (73 MORTALIDADE A.S 62,24%)
-${pesoLinha}
 SOFA: [calcular o escore SOFA do dia conforme a regra; se faltarem exames laboratoriais da data atual, escrever a mensagem listando quais faltam]
+${pesoLinha}
 HIPOTESES DIAGNOSTICAS:
 [cada hipotese em sua propria linha, com o CID-10 entre parenteses ao final de TODAS, ex: "(CID A41.9)"]
 HISTORIA DA DOENCA ATUAL:
@@ -2946,8 +2948,8 @@ ADMISSAO UTI: DATA:
 ------------- UTI GERAL [escolher I ou II conforme a informacao; se nao houver, escrever [COMPLEMENTAR: informar se e UTI GERAL I ou II]] -------------
 ALERGIAS:
 SAPS III: (73 MORTALIDADE A.S 62,24%)
-${pesoLinha}
 SOFA: [calcular o escore SOFA do dia conforme a regra; se faltarem exames laboratoriais da data atual, escrever a mensagem listando quais faltam]
+${pesoLinha}
 HIPOTESES DIAGNOSTICAS:
 [cada hipotese em sua propria linha, com o CID-10 entre parenteses ao final de TODAS, ex: "(CID A41.9)"]
 PROFILAXIAS:
@@ -2998,8 +3000,9 @@ REGRAS DE ORGANIZACAO DO DIARISTA (alem dos checkboxes):
 - Aplicar as mesmas regras gerais de "um item por linha", negrito de titulos e espacamento dos demais modelos.
 - HIPOTESES DIAGNOSTICAS: cada hipotese em sua propria linha (atualizadas conforme contexto/intercorrencias), com CID-10 entre parenteses ao final de TODAS.
 - ANTECEDENTES PESSOAIS: cada antecedente em sua propria linha, com CID-10 entre parenteses ao final de cada um.
-- EXAMES COMPLEMENTARES: um exame por linha, no formato NOME DO EXAME + DATA: descricao (nome/data em destaque, descricao sem negrito).
-- ANTIBIOTICOTERAPIA EM USO: nome + dose + posologia + dia de inicio + previsao de termino (se nao houver previsao, considerar 7 dias). Se mais de um, um por linha.
+- EXAMES COMPLEMENTARES: um exame por linha, no formato NOME DO EXAME + DATA: descricao (nome/data em destaque, descricao sem negrito), em ORDEM CRONOLOGICA (mais antigo primeiro).
+- MEDICACOES DE USO CONTINUO: cada medicacao em sua propria linha (um abaixo do outro); NUNCA separar por "/" ou virgula, exceto combinado fixo num unico produto.
+- ANTIBIOTICOTERAPIA EM USO e PREVIA: nome + dose + posologia + dia de inicio + previsao de termino (se nao houver previsao, considerar 7 dias). Cada esquema em sua PROPRIA LINHA, um abaixo do outro (nunca varios numa linha so).
 
 MODELO DIARISTA:
 EVOLUCAO MEDICA DIARISTA — [DATA]
