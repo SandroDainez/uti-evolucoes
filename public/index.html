@@ -3206,7 +3206,8 @@ const EX_PRESET = {
 const EX_LABELS = { ncons:'Nível de consciência', pup:'Pupilas', rass:'RASS', gcs:'Glasgow', cam:'CAM-ICU',
   o2:'Suporte de O2', padr:'Padrão respiratório', mv:'Murmúrio vesicular', adv:'Ruídos adventícios', spo2:'SpO2', fr:'FR',
   fc:'FC', tax:'Temperatura', pas:'PA sistólica', pad:'PA diastólica', ritmo:'Ritmo', aust:'Ausculta cardíaca', perf:'Perfusão', edema:'Edema',
-  abd:'Abdome', rha:'RHA', diet:'Dieta', urina:'Diurese (aspecto)', du:'Débito urinário', bh:'Balanço hídrico', pele:'Pele', lpp:'Lesão por pressão' };
+  abd:'Abdome', rha:'RHA', diet:'Dieta', urina:'Diurese (aspecto)', du:'Débito urinário', pele:'Pele', lpp:'Lesão por pressão',
+  bal_periodo:'Período do balanço', febre:'Temperatura/febre', escapes:'Escapes glicêmicos', diurese_vol:'Diurese (volume)', perdas:'Drenos/sondas/perdas', bh:'Balanço hídrico' };
 
 let _exameParsed = null;   // JSON cru devolvido pela extração
 let _exSkip = new Set();    // campos marcados como "sem dado" (N/D) pelo médico
@@ -3381,6 +3382,66 @@ function exCamNA(){
   exMark(hid, 'cam');
 }
 
+// ── Campo de escolha (chips) que revela um texto quando opção "reveal" é marcada ──
+function exChoiceReveal(key, label, options, revealOn, val, txtVal, ph){
+  const filled = exHas(val) || exHas(txtVal);
+  const chips = options.map(o => `<span class="ex-chip${o===val?' active':''}" onclick="exChoicePick('${key}',this.textContent,'${exEsc(revealOn)}')">${exEsc(o)}</span>`).join('');
+  const showTxt = (val === revealOn);
+  return `<div class="ex-field full" id="exf_${key}">${exLabelRow(key,label,filled,true)}
+    <div class="ex-chiprow" id="ex_${key}_row">${chips}</div>
+    <input type="hidden" id="ex_${key}" value="${filled?exEsc(val||''):''}">
+    <input type="text" id="ex_${key}_txt" class="ex-inp" style="margin-top:6px;display:${showTxt?'block':'none'}" placeholder="${exEsc(ph||'')}" value="${exEsc(txtVal||'')}" oninput="exMark(document.getElementById('ex_${key}'),'${key}')"></div>`;
+}
+function exChoicePick(key, val, revealOn){
+  document.querySelectorAll('#ex_'+key+'_row .ex-chip').forEach(c => c.classList.toggle('active', c.textContent === val));
+  document.getElementById('ex_'+key).value = val;
+  const t = document.getElementById('ex_'+key+'_txt'); if(t) t.style.display = (val === revealOn) ? 'block' : 'none';
+  exMark(document.getElementById('ex_'+key), key);
+}
+
+// ── Período do balanço (24h 07h-07h ou parcial com horários) ──
+function renderPeriodo(p){
+  const isParcial = (p.bal_periodo === 'Período parcial');
+  const filled = exHas(p.bal_periodo);
+  return `<div class="ex-field full" id="exf_bal_periodo">${exLabelRow('bal_periodo','Período do balanço',filled,true)}
+    <div class="ex-chiprow" id="ex_bal_periodo_row">
+      <span class="ex-chip${p.bal_periodo==='24 horas (07h às 07h)'?' active':''}" onclick="exPeriodoPick('24 horas (07h às 07h)')">24 horas (07h às 07h)</span>
+      <span class="ex-chip${isParcial?' active':''}" onclick="exPeriodoPick('Período parcial')">Período parcial</span>
+    </div>
+    <input type="hidden" id="ex_bal_periodo" value="${filled?exEsc(p.bal_periodo):''}">
+    <div id="ex_bal_horas" style="display:${isParcial?'flex':'none'};gap:8px;align-items:center;margin-top:6px;">
+      <span style="font-size:11px;color:var(--text3)">De</span>
+      <input type="time" id="ex_bal_ini" class="ex-inp" style="width:auto" value="${exEsc(p.bal_ini||'')}">
+      <span style="font-size:11px;color:var(--text3)">até</span>
+      <input type="time" id="ex_bal_fim" class="ex-inp" style="width:auto" value="${exEsc(p.bal_fim||'')}">
+    </div></div>`;
+}
+function exPeriodoPick(v){
+  document.querySelectorAll('#ex_bal_periodo_row .ex-chip').forEach(c => c.classList.toggle('active', c.textContent === v));
+  document.getElementById('ex_bal_periodo').value = v;
+  document.getElementById('ex_bal_horas').style.display = (v === 'Período parcial') ? 'flex' : 'none';
+  exMark(document.getElementById('ex_bal_periodo'), 'bal_periodo');
+}
+
+// ── Balanço hídrico: sinal (positivo/negativo) + volume ──
+function renderBalancoHid(p){
+  const filled = exHas(p.bh_sinal) || exHas(p.bh_vol);
+  return `<div class="ex-field full" id="exf_bh">${exLabelRow('bh','Balanço hídrico',filled,true)}
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div class="ex-chiprow" id="ex_bh_sinal_row">
+        <span class="ex-chip${p.bh_sinal==='Positivo'?' active':''}" onclick="exBhSinal('Positivo')">Positivo</span>
+        <span class="ex-chip${p.bh_sinal==='Negativo'?' active':''}" onclick="exBhSinal('Negativo')">Negativo</span>
+      </div>
+      <input type="number" step="any" id="ex_bh_vol" class="ex-inp" style="max-width:160px" placeholder="Volume (mL)" value="${exHas(p.bh_vol)?exEsc(p.bh_vol):''}" oninput="exMark(this,'bh')">
+    </div>
+    <input type="hidden" id="ex_bh_sinal" value="${exEsc(p.bh_sinal||'')}"></div>`;
+}
+function exBhSinal(v){
+  document.querySelectorAll('#ex_bh_sinal_row .ex-chip').forEach(c => c.classList.toggle('active', c.textContent === v));
+  document.getElementById('ex_bh_sinal').value = v;
+  exMark(document.getElementById('ex_bh_vol'), 'bh');
+}
+
 // ── Medicações em INFUSÃO contínua (medicação + mL/h → dose calculada) ──
 function exInfSection(rows){
   const list = (Array.isArray(rows)?rows:[]).map(r=>exInfRow(r)).join('');
@@ -3549,9 +3610,28 @@ function renderExameForm(p){
     <div class="ex-grid">
       ${exSel('urina','Aspecto da diurese',EX_OPTS.urina,p.urina)}
       ${exNum('du','Débito urinário',p.du,'mL/h')}
-      ${exNum('bh','Balanço hídrico',p.bh,'mL')}
     </div>
-    <div class="ex-help" style="margin:0 12px 10px;">Débito e balanço às vezes só estão disponíveis parciais (não 24h) — informe o que tiver ou marque "s/ dado".</div>
+  </div>
+
+  <div class="ex-sec">
+    <div class="ex-sec-head">📊 Controles e Balanço (24h / período)</div>
+    <div class="ex-grid one">
+      ${renderPeriodo(p)}
+    </div>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${exChoiceReveal('febre','Temperatura',['Afebril','Febril'],'Febril',p.febre,p.febre_val,'Valor(es) do pico febril (ex: Tmáx 38,9°C)')}
+    </div>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${exChoiceReveal('escapes','Escapes glicêmicos (>180)',['Sem escapes glicêmicos','Houve escapes (>180)'],'Houve escapes (>180)',p.escapes,p.escapes_val,'Valores dos escapes (ex: 210, 245, 198 mg/dL)')}
+    </div>
+    <div class="ex-grid">
+      ${exNum('diurese_vol','Diurese (volume)',p.diurese_vol,'mL')}
+    </div>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${renderBalancoHid(p)}
+      ${exTxt('perdas','Drenos / sondas / outras perdas (com volumes)',p.perdas,'Ex: Dreno tórax D 150 mL, SNG 200 mL, ostomia 300 mL')}
+    </div>
+    <div class="ex-help" style="margin:0 12px 10px;">Balanço de 24h é das 07h às 07h; se parcial, informe de que horário a que horário. Escape glicêmico na UTI = acima de 180.</div>
   </div>
 
   <div class="ex-sec">
@@ -3624,9 +3704,13 @@ function collectExame(){
   const g = id => { if (skipped(id)) return ''; const el = document.getElementById('ex_'+id); return el ? String(el.value).trim() : ''; };
   const o = {};
   ['ncons','pup','cam','padr','mv','adv','o2','vmodo','ritmo','aust','perf','edema','abd','rha','diet','urina','pele','lpp',
-   'gcs','fio2','peep','vc','ppico','fr','spo2','fc','pas','pad','tax','du','bh','saps3','peso',
-   'rass','alergias','justificativa_uti'
+   'gcs','fio2','peep','vc','ppico','fr','spo2','fc','pas','pad','tax','du','saps3','peso',
+   'rass','alergias','justificativa_uti',
+   'bal_periodo','bal_ini','bal_fim','febre','escapes','diurese_vol','perdas','bh_sinal','bh_vol'
   ].forEach(k => { const v = g(k); if (v) o[k] = v; });
+  // textos revelados das escolhas (febre/escapes)
+  if (!skipped('febre')) { const t = document.getElementById('ex_febre_txt'); if (t) o.febre_val = t.value.trim(); }
+  if (!skipped('escapes')) { const t = document.getElementById('ex_escapes_txt'); if (t) o.escapes_val = t.value.trim(); }
   o.profilaxia_gastrica = exGetPreset('profilaxia_gastrica');
   o.profilaxia_tep = exGetPreset('profilaxia_tep');
   o.demanda_familiar = exGetPreset('demanda_familiar');
@@ -3707,7 +3791,20 @@ function exameToBlock(o){
   add('DIETA/NUTRICAO', o.diet);
   add('ASPECTO DA DIURESE', o.urina);
   add('DEBITO URINARIO', exHas(o.du)?o.du+' ML/H':'');
-  add('BALANCO HIDRICO', exHas(o.bh)?o.bh+' ML':'');
+  // CONTROLES E BALANCO DAS ULTIMAS 24 HORAS
+  const ctrl = [];
+  if (o.bal_periodo === 'Período parcial')
+    ctrl.push('PERIODO: ' + ((o.bal_ini||o.bal_fim) ? `${o.bal_ini||'?'} AS ${o.bal_fim||'?'}` : 'PARCIAL (informar horario)'));
+  else if (o.bal_periodo)
+    ctrl.push('PERIODO: BALANCO DE 24 HORAS (07H AS 07H)');
+  if (o.febre === 'Febril') ctrl.push('TEMPERATURA: FEBRIL' + (o.febre_val ? ` (PICO ${o.febre_val})` : ' (informar pico)'));
+  else if (o.febre === 'Afebril') ctrl.push('TEMPERATURA: AFEBRIL');
+  if (o.escapes === 'Houve escapes (>180)') ctrl.push('ESCAPES GLICEMICOS (>180): ' + (o.escapes_val || 'informar valores'));
+  else if (o.escapes === 'Sem escapes glicêmicos') ctrl.push('ESCAPES GLICEMICOS: SEM ESCAPES (>180)');
+  if (exHas(o.diurese_vol)) ctrl.push('DIURESE: ' + o.diurese_vol + ' ML');
+  if (exHas(o.perdas)) ctrl.push('DRENOS/SONDAS/OUTRAS PERDAS: ' + o.perdas);
+  if (exHas(o.bh_sinal) || exHas(o.bh_vol)) ctrl.push('BALANCO HIDRICO: ' + (o.bh_sinal ? o.bh_sinal.toUpperCase() : '') + (exHas(o.bh_vol) ? ` ${o.bh_vol} ML` : '') );
+  if (ctrl.length){ L.push('CONTROLES E BALANCO DAS ULTIMAS 24 HORAS:'); ctrl.forEach(c => L.push('  ' + c)); }
   add('PELE', o.pele);
   add('LESAO POR PRESSAO', o.lpp);
   add('PROFILAXIA GASTRICA', o.profilaxia_gastrica);
@@ -3929,7 +4026,8 @@ ATENCAO — SEM FICHA DE EXAMES: nao existe ficha de exames laboratoriais salva 
 `}
 ${structuredBlock ? `========================================
 🩺 EXAME CLINICO ESTRUTURADO (REVISADO E CONFIRMADO PELO MEDICO — FONTE PRIORITARIA):
-Estes campos foram extraidos do texto e REVISADOS pelo medico. Use-os como a fonte AUTORITATIVA para montar a secao EXAME CLINICO (e os campos correspondentes: SEDACAO/ANALGESIA, BLOQUEADOR NEUROMUSCULAR, DROGAS VASOATIVAS, DISPOSITIVOS INVASIVOS, PROFILAXIAS, ANTIMICROBIANOS EM USO, NUTRICAO, ALERGIAS, JUSTIFICATIVA DE PERMANENCIA, DEMANDA FAMILIAR).
+Estes campos foram extraidos do texto e REVISADOS pelo medico. Use-os como a fonte AUTORITATIVA para montar a secao EXAME CLINICO (e os campos correspondentes: SEDACAO/ANALGESIA, BLOQUEADOR NEUROMUSCULAR, DROGAS VASOATIVAS, DISPOSITIVOS INVASIVOS, PROFILAXIAS, ANTIMICROBIANOS EM USO, NUTRICAO, ALERGIAS, CONTROLES E BALANCO DAS ULTIMAS 24 HORAS, JUSTIFICATIVA DE PERMANENCIA, DEMANDA FAMILIAR).
+Na secao CONTROLES E BALANCO DAS ULTIMAS 24 HORAS, usar os dados de periodo, temperatura/febre, escapes glicemicos, diurese, drenos/sondas/perdas e balanco hidrico exatamente como fornecidos; se o periodo for "24 horas", deixar claro "das 07h as 07h"; escape glicemico e somente glicemia capilar acima de 180.
 REGRAS: reproduzir EXATAMENTE estes valores; converter para o formato/secoes do modelo; NAO contradizer nem inventar campos que aqui estao ausentes (para os ausentes, aplicar a regra [COMPLEMENTAR]). Manter coerencia clinica (Regra 22).
 ${structuredBlock}
 ========================================

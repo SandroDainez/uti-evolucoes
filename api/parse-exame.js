@@ -44,7 +44,18 @@ ABDOME / DIGESTIVO:
 
 RENAL / VOLEMIA:
 - "urina": ["Amarelo-clara (normal)","Concentrada (âmbar)","Oligúria (<0,5 mL/kg/h)","Hematúria macroscópica","Em TRS"]
-- "du": numero (mL/h), "bh": numero (mL/24h, pode ser negativo)
+- "du": numero (mL/h) — débito urinário instantâneo, senao null
+
+CONTROLES E BALANCO DAS ULTIMAS 24 HORAS:
+- "bal_periodo": "24 horas (07h às 07h)" se o balanço for de 24h, ou "Período parcial" se for parcial, senao null
+- "bal_ini": horario de inicio (HH:MM) se periodo parcial, senao null. "bal_fim": horario de fim (HH:MM) se parcial, senao null
+- "febre": "Febril" se houve febre/temperatura elevada, "Afebril" se explicitamente sem febre, senao null
+- "febre_val": string com o(s) valor(es) do pico febril (ex: "Tmáx 38,9°C"), senao null
+- "escapes": "Houve escapes (>180)" se houve glicemia capilar acima de 180, "Sem escapes glicêmicos" se explicitamente sem escapes, senao null. ATENCAO: na UTI escape glicemico e SOMENTE glicemia capilar ACIMA de 180.
+- "escapes_val": string com os valores dos escapes >180 (ex: "210, 245, 198 mg/dL"), senao null
+- "diurese_vol": numero (volume total de diurese em mL no periodo), senao null
+- "perdas": string com drenos/sondas/outras perdas e seus volumes (ex: "Dreno tórax D 150 mL, SNG 200 mL"), senao null
+- "bh_sinal": "Positivo" ou "Negativo" (sinal do balanço hídrico), senao null. "bh_vol": numero (volume do balanço em mL, valor absoluto), senao null
 
 PELE / TEGUMENTAR:
 - "pele": ["Normocorada, hidratada, anictérica","Pálida, hidratada, anictérica","Ictérica (+2/4)","Ictérica (+3/4 ou +4/4)","Cianótica periférica","Maculopapular (rash)","Petéquias / equimoses"]
