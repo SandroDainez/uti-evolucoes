@@ -3361,6 +3361,8 @@ function renderExameForm(p){
   const vm = (p.o2 === 'VM invasiva' || p.o2 === 'Traqueostomia em VM');
   const isDiurnoAdm = (currentType === 'diurno' || currentType === 'admissao');
   _exSkip = new Set();
+  _exWarnShown = false;
+  const _gb = document.getElementById('exameGerarBtn'); if (_gb) _gb.innerHTML = '<span>⚡</span> Gerar Evolução';
   let nFilled = 0, nTotal = 0;
   const count = v => { nTotal++; if (exHas(v)) nFilled++; };
   ['ncons','pup','o2','padr','mv','adv','spo2','fr','fc','pas','pad','ritmo','aust','perf','edema','abd','rha','diet','urina','pele'].forEach(k=>count(p[k]));
@@ -3642,6 +3644,53 @@ function cancelExameRevisao(){
   _exameParsed = null;
 }
 
+// ── Checagem de coerência semiológica (antes de gerar) ──
+function exCoherenceWarnings(o){
+  const w = [];
+  const vm = (o.o2 === 'VM invasiva' || o.o2 === 'Traqueostomia em VM');
+  if (vm && !o.vmodo && !o.fio2 && !o.peep && !o.vc && !o.ppico)
+    w.push('Ventilação mecânica selecionada, mas sem nenhum parâmetro (modo / FiO2 / PEEP / VC).');
+  if (o.o2 === 'Ar ambiente' && (o.vmodo || o.fio2 || o.peep || o.vc || o.ppico))
+    w.push('"Ar ambiente" selecionado, mas há parâmetros de ventilação mecânica preenchidos.');
+  const hasSed = (o.infusoes||[]).some(i=>i.cat==='sed') || /sed|coma|torpor|rebaix/i.test(o.ncons||'');
+  if (hasSed && !o.rass && !_exSkip.has('rass'))
+    w.push('Paciente sob sedação/rebaixamento, mas sem RASS informado.');
+  const hasVaso = (o.infusoes||[]).some(i=>i.cat==='vaso');
+  if (hasVaso && !o.pas && !o.pad && !_exSkip.has('pas') && !_exSkip.has('pad'))
+    w.push('Droga vasoativa em uso, mas sem pressão arterial (PA) registrada.');
+  if (hasVaso && o.pas && parseFloat(o.pas) > 160)
+    w.push('Droga vasoativa em uso com PA sistólica elevada ('+o.pas+' mmHg) — reavaliar necessidade/dose.');
+  if (o.cam === 'Positivo' && (o.rass === '-4' || o.rass === '-5'))
+    w.push('CAM-ICU positivo é incompatível com RASS '+o.rass+' (delirium não avaliável nesse nível de sedação).');
+  if (o.semInfusao && hasVaso)
+    w.push('Marcado "sem medicações em infusão", mas há droga vasoativa listada.');
+  if (!o.ncons && !_exSkip.has('ncons') && !o.rass)
+    w.push('Nível de consciência não informado (nem RASS) — campo essencial do exame neurológico.');
+  return w;
+}
+function exShowWarnings(warns){
+  let box = document.getElementById('ex_warnbox');
+  if (!warns.length){ if (box) box.remove(); return; }
+  const html = `<div style="background:rgba(255,170,0,.10);border:1px solid rgba(255,170,0,.45);border-radius:10px;padding:10px 14px;margin:0 0 4px;">
+    <div style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px;">⚠️ ${warns.length} aviso(s) de coerência semiológica</div>
+    <ul style="margin:0;padding-left:18px;font-size:11px;color:var(--text);line-height:1.6;">${warns.map(x=>`<li>${exEsc(x)}</li>`).join('')}</ul>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px;">Ajuste os campos acima ou clique novamente em "Gerar Evolução" para prosseguir mesmo assim.</div>
+  </div>`;
+  if (!box){ box = document.createElement('div'); box.id = 'ex_warnbox'; document.getElementById('exameBody').prepend(box); }
+  box.innerHTML = html;
+  box.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+// ── Pendências [COMPLEMENTAR/VERIFICAR/CONFIRMAR] antes de finalizar ──
+function pendingMarkers(text){
+  return (text || '').match(/\[(COMPLEMENTAR|VERIFICAR|CONFIRMAR|DADO PARCIAL)\b[^\]]*\]/gi) || [];
+}
+function confirmPending(text, acao){
+  const p = pendingMarkers(text);
+  if (!p.length) return true;
+  return confirm('⚠️ Esta evolução ainda tem ' + p.length + ' campo(s) pendente(s) [COMPLEMENTAR/VERIFICAR].\n\nUm prontuário não deve ser finalizado com lacunas. Preencha os campos pendentes antes de colar no sistema do hospital.\n\nDeseja ' + acao + ' mesmo assim?');
+}
+
 // ETAPA 1 → 2: valida, extrai com IA e mostra o formulário de revisão
 async function generateEvolution() {
   if (!currentType) { showToast('Selecione um tipo de evolução', 'error'); return; }
@@ -3697,8 +3746,21 @@ async function generateEvolution() {
 }
 
 // ETAPA 3: lê o formulário revisado e gera a evolução com os dados confirmados
+let _exWarnShown = false;
 function confirmAndGenerate(){
   const o = collectExame();
+  const warns = exCoherenceWarnings(o);
+  if (warns.length && !_exWarnShown){
+    // primeiro clique: mostra os avisos no painel e aguarda confirmação
+    exShowWarnings(warns);
+    _exWarnShown = true;
+    const b = document.getElementById('exameGerarBtn');
+    if (b) b.innerHTML = '<span>⚠️</span> Gerar mesmo assim';
+    showToast(warns.length + ' aviso(s) de coerência — revise ou clique novamente', 'error');
+    return;
+  }
+  _exWarnShown = false;
+  exShowWarnings([]);
   const block = exameToBlock(o);
   document.getElementById('examePanel').style.display = 'none';
   return _doGenerate(block);
@@ -4102,7 +4164,12 @@ function renderOutput(rawText) {
     html += `<span class="o-plain">${colorComplementarScreen(esc)}</span>`;
   });
 
-  content.innerHTML = html;
+  // Banner de pendências: alerta de que o prontuário ainda tem lacunas a preencher
+  const pend = pendingMarkers(rawText);
+  const banner = pend.length
+    ? `<div style="background:rgba(255,170,0,.10);border:1px solid rgba(255,170,0,.45);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--warn);font-weight:600;">⚠️ ${pend.length} campo(s) pendente(s) [COMPLEMENTAR/VERIFICAR] — preencha antes de colar no sistema do hospital.</div>`
+    : '';
+  content.innerHTML = banner + html;
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -4254,6 +4321,7 @@ function generateHtmlForCopy(rawText) {
 
 function copyOutput() {
   if (!lastRawOutput) return;
+  if (!confirmPending(lastRawOutput, 'copiar')) return;
   const plain = cleanTextForCopy(lastRawOutput);
   const html  = generateHtmlForCopy(lastRawOutput);
 
@@ -4276,6 +4344,7 @@ function copyOutput() {
 function printEvolucao(textArg, nomeArg) {
   const texto = textArg || lastRawOutput;
   if (!texto) { showToast('Gere uma evolução primeiro', 'error'); return; }
+  if (!confirmPending(texto, 'imprimir')) return;
   const html = generateHtmlForCopy(texto);
   const nome = nomeArg || (document.getElementById('patNome').value.trim() || extractNomeFromOutput(texto) || 'Evolução');
   const w = window.open('', '_blank');
@@ -4291,6 +4360,7 @@ function printEvolucao(textArg, nomeArg) {
 async function downloadEvolucaoPDF(textArg, nomeArg) {
   const fonte = textArg || lastRawOutput;
   if (!fonte) { showToast('Gere uma evolução primeiro', 'error'); return; }
+  if (!confirmPending(fonte, 'baixar o PDF')) return;
   try {
     if (!window.jspdf) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
     const { jsPDF } = window.jspdf;
@@ -5702,6 +5772,7 @@ function extractNomeFromOutput(text) {
 
 async function saveEvolucao() {
   if (!lastRawOutput) { showToast('Gere uma evolução antes de salvar', 'error'); return; }
+  if (!confirmPending(lastRawOutput, 'salvar')) return;
   let patNome = document.getElementById('patNome').value.trim();
   // Se o campo estiver vazio, extrair o nome do cabeçalho da evolução gerada
   if (!patNome) {
