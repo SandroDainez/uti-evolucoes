@@ -954,6 +954,24 @@
   .ex-inf-row .ex-inp, .ex-inf-row .ex-sel { font-size: 11px; padding: 6px 8px; }
   .ex-inf-dose { font-size: 11px; font-weight: 600; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   @media (max-width: 640px) { .ex-inf-row { grid-template-columns: 1fr 1fr; } }
+  /* escalas interativas (RASS / GCS / CAM) */
+  .ex-scalelist { display: flex; flex-direction: column; gap: 4px; }
+  .ex-scalerow { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; background: var(--bg); font-size: 11px; color: var(--text2); transition: all .12s; }
+  .ex-scalerow:hover { border-color: var(--accent); color: var(--text); }
+  .ex-scalerow.active { border-color: var(--accent); background: rgba(0,212,255,.08); color: var(--text); }
+  .ex-scaleval { min-width: 32px; text-align: center; font-weight: 700; font-size: 12px; padding: 2px 6px; border-radius: 6px; background: var(--surface2); color: var(--text); flex-shrink: 0; }
+  .ex-scalerow.active .ex-scaleval { background: var(--accent); color: #001018; }
+  .ex-gcs-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .ex-gcs-grid > div > .ex-label { margin-bottom: 3px; }
+  .ex-gcs-total { font-size: 14px; font-weight: 700; color: var(--accent); padding: 8px 0 2px; }
+  .ex-cam-feat { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 5px; font-size: 11px; color: var(--text); }
+  .ex-cam-btns { display: flex; gap: 5px; flex-shrink: 0; }
+  .ex-cam-btn { font-size: 11px; font-weight: 600; padding: 4px 13px; border-radius: 12px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text2); user-select: none; }
+  .ex-cam-btn:hover { border-color: var(--accent); }
+  .ex-cam-btn.yes.active { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .ex-cam-btn.no.active { background: var(--success); border-color: var(--success); color: #001a10; }
+  .ex-cam-result { font-size: 12px; font-weight: 700; padding: 4px 0; }
+  .ex-field.ex-skipped .ex-scalerow, .ex-field.ex-skipped .ex-cam-btn { pointer-events: none; }
   @media (max-width: 640px) {
     .ex-grid { grid-template-columns: 1fr; }
     .ex-atb-row { grid-template-columns: 1fr 1fr; }
@@ -3269,24 +3287,98 @@ function exPresetChange(key){
   const b = w && w.querySelector('.ex-badge'); if(b && !w.classList.contains('ex-skipped')){ b.className='ex-badge '+(has?'ok':'miss'); b.textContent=has?'extraído':'preencher'; }
 }
 
-// linha de chips RASS (seleção única) com legenda do significado
+// ── RASS: escala interativa (cada valor com seu significado, clicável) ──
 function exRassRow(val, sedContext){
   const filled = exHas(val);
-  const chips = EX_RASS.map(r => `<span class="ex-chip rass${r===val?' active':''}" onclick="exPickRass(this,'${r}')">${r}</span>`).join('');
-  const note = filled ? ('RASS '+val+': '+(RASS_MEAN[val]||'')) : (sedContext ? 'Selecione o nível de sedação/agitação (RASS).' : 'Preencher apenas se o paciente estiver sedado ou agitado.');
-  const legend = Object.keys(RASS_MEAN).map(k=>`<b>${k}</b> ${exEsc(RASS_MEAN[k])}`).join('<br>');
-  return `<div class="ex-field full" id="exf_rass">${exLabelRow('rass','RASS',filled,true)}
-    <div class="ex-chiprow" id="ex_rass_row">${chips}</div>
+  const rows = EX_RASS.map(r => `<div class="ex-scalerow${r===val?' active':''}" onclick="exPickRass('${r}')"><span class="ex-scaleval">${r}</span><span>${exEsc(RASS_MEAN[r])}</span></div>`).join('');
+  const note = sedContext ? 'Clique no nível correspondente.' : 'Preencher apenas se o paciente estiver sedado ou agitado.';
+  return `<div class="ex-field full" id="exf_rass">${exLabelRow('rass','RASS — escala de agitação-sedação',filled,true)}
+    <div class="ex-scalelist" id="ex_rass_row">${rows}</div>
     <input type="hidden" id="ex_rass" value="${filled?exEsc(val):''}">
-    <div class="ex-help" id="ex_rass_help">${exEsc(note)}</div>
-    <details class="ex-legend"><summary>ver escala RASS completa</summary><div class="ex-legend-body">${legend}</div></details></div>`;
+    <div class="ex-help">${exEsc(note)}</div></div>`;
 }
-function exPickRass(el, r){
-  document.querySelectorAll('#ex_rass_row .ex-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
+function exPickRass(r){
+  document.querySelectorAll('#ex_rass_row .ex-scalerow').forEach(c => c.classList.toggle('active', c.querySelector('.ex-scaleval').textContent === r));
   document.getElementById('ex_rass').value = r;
-  const h = document.getElementById('ex_rass_help'); if(h) h.textContent = 'RASS '+r+': '+(RASS_MEAN[r]||'');
   exMark(document.getElementById('ex_rass'), 'rass');
+}
+
+// ── GLASGOW (GCS): selecionar ocular / verbal / motora → calcula total ──
+const GCS_OPTS = {
+  ocular: [['4','Espontânea'],['3','Ao estímulo verbal'],['2','À dor'],['1','Nenhuma']],
+  verbal: [['5','Orientado'],['4','Confuso'],['3','Palavras inapropriadas'],['2','Sons incompreensíveis'],['1','Nenhuma'],['T','Intubado/TQT (não verbalizável)']],
+  motora: [['6','Obedece a comandos'],['5','Localiza a dor'],['4','Retirada à dor'],['3','Flexão anormal (decorticação)'],['2','Extensão anormal (descerebração)'],['1','Nenhuma']],
+};
+function exGcsSel(part){
+  let o = `<option value="">—</option>`;
+  GCS_OPTS[part].forEach(([v,t]) => o += `<option value="${v}">${v} — ${exEsc(t)}</option>`);
+  return `<select class="ex-sel ex-gcs-${part}" onchange="exGcsCalc()">${o}</select>`;
+}
+function renderGcs(val){
+  const filled = exHas(val);
+  return `<div class="ex-field full" id="exf_gcs">${exLabelRow('gcs','Glasgow (GCS) — escolha cada componente',filled,true)}
+    <div class="ex-gcs-grid">
+      <div><div class="ex-label">Abertura ocular</div>${exGcsSel('ocular')}</div>
+      <div><div class="ex-label">Resposta verbal</div>${exGcsSel('verbal')}</div>
+      <div><div class="ex-label">Resposta motora</div>${exGcsSel('motora')}</div>
+    </div>
+    <div class="ex-gcs-total" id="ex_gcs_total">${filled?('GCS extraído: '+exEsc(val)+' — selecione os componentes para detalhar'):'Selecione os 3 componentes'}</div>
+    <input type="hidden" id="ex_gcs" value="${filled?exEsc(val):''}"></div>`;
+}
+function exGcsCalc(){
+  const o = document.querySelector('.ex-gcs-ocular').value, v = document.querySelector('.ex-gcs-verbal').value, m = document.querySelector('.ex-gcs-motora').value;
+  const tot = document.getElementById('ex_gcs_total'), hid = document.getElementById('ex_gcs');
+  if (o && v && m){
+    const sum = (+o) + (v === 'T' ? 1 : +v) + (+m);
+    const suf = v === 'T' ? 'T' : '';
+    const str = `${sum}${suf} (O${o} V${v} M${m})`;
+    tot.textContent = 'GCS ' + str; hid.value = str;
+  } else { tot.textContent = 'Selecione os 3 componentes'; hid.value = ''; }
+  exMark(hid, 'gcs');
+}
+
+// ── CAM-ICU: avaliar os 4 critérios → calcula Positivo/Negativo ──
+const CAM_FEATURES = [
+  ['f1','1. Início agudo de alteração mental OU curso flutuante'],
+  ['f2','2. Inatenção (dificuldade em manter a atenção)'],
+  ['f3','3. Nível de consciência alterado (RASS diferente de 0)'],
+  ['f4','4. Pensamento desorganizado'],
+];
+let _camState = {};
+function renderCam(val){
+  const filled = exHas(val);
+  const feats = CAM_FEATURES.map(([k,t]) => `<div class="ex-cam-feat"><span>${exEsc(t)}</span><span class="ex-cam-btns"><span class="ex-cam-btn yes" data-f="${k}" data-v="1" onclick="exCamSet('${k}',1)">Sim</span><span class="ex-cam-btn no" data-f="${k}" data-v="0" onclick="exCamSet('${k}',0)">Não</span></span></div>`).join('');
+  return `<div class="ex-field full" id="exf_cam">${exLabelRow('cam','CAM-ICU — avaliação de delirium',filled,true)}
+    ${feats}
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+      <span class="ex-cam-btn" onclick="exCamNA()">Não avaliável (RASS -4/-5)</span>
+      <span class="ex-cam-result" id="ex_cam_result">${filled?('CAM-ICU extraído: '+exEsc(val)):''}</span>
+    </div>
+    <input type="hidden" id="ex_cam" value="${filled?exEsc(val):''}">
+    <div class="ex-help">Positivo = critério 1 E 2 E (3 OU 4). ${exEsc(CAM_LEGEND)}</div></div>`;
+}
+function exCamSet(f, v){
+  _camState[f] = v;
+  document.querySelectorAll(`.ex-cam-btn[data-f="${f}"]`).forEach(b => b.classList.toggle('active', (+b.dataset.v) === v));
+  exCamCalc();
+}
+function exCamCalc(){
+  const { f1, f2, f3, f4 } = _camState;
+  const hid = document.getElementById('ex_cam'), res = document.getElementById('ex_cam_result');
+  if ([f1,f2,f3,f4].some(x => x === undefined)){ res.textContent = 'Responda os 4 critérios'; res.style.color = 'var(--text3)'; return; }
+  const pos = f1 === 1 && f2 === 1 && (f3 === 1 || f4 === 1);
+  hid.value = pos ? 'Positivo' : 'Negativo';
+  res.textContent = 'CAM-ICU ' + hid.value + (pos ? ' (delirium presente)' : ' (sem delirium)');
+  res.style.color = pos ? 'var(--danger)' : 'var(--success)';
+  exMark(hid, 'cam');
+}
+function exCamNA(){
+  _camState = {};
+  document.querySelectorAll('.ex-cam-btn[data-f]').forEach(b => b.classList.remove('active'));
+  const hid = document.getElementById('ex_cam'), res = document.getElementById('ex_cam_result');
+  hid.value = 'Não avaliável';
+  res.textContent = 'CAM-ICU não avaliável'; res.style.color = 'var(--text2)';
+  exMark(hid, 'cam');
 }
 
 // ── Medicações em INFUSÃO contínua (medicação + mL/h → dose calculada) ──
@@ -3362,6 +3454,7 @@ function renderExameForm(p){
   const isDiurnoAdm = (currentType === 'diurno' || currentType === 'admissao');
   _exSkip = new Set();
   _exWarnShown = false;
+  _camState = {};
   const _gb = document.getElementById('exameGerarBtn'); if (_gb) _gb.innerHTML = '<span>⚡</span> Gerar Evolução';
   let nFilled = 0, nTotal = 0;
   const count = v => { nTotal++; if (exHas(v)) nFilled++; };
@@ -3393,11 +3486,12 @@ function renderExameForm(p){
     <div class="ex-grid one" style="padding-top:0;">
       ${exRassRow(p.rass, sedContext)}
     </div>
-    <div class="ex-grid">
-      ${exNum('gcs','Glasgow (GCS)',p.gcs)}
-      ${exSel('cam','CAM-ICU (delirium)',EX_OPTS.cam,p.cam,CAM_LEGEND)}
+    <div class="ex-grid one" style="padding-top:0;">
+      ${renderGcs(p.gcs)}
     </div>
-    <details class="ex-legend" style="margin:0 12px 10px;"><summary>ver escala de Glasgow (GCS)</summary><div class="ex-legend-body">${exEsc(GCS_LEGEND)}</div></details>
+    <div class="ex-grid one" style="padding-top:0;">
+      ${renderCam(p.cam)}
+    </div>
   </div>
 
   <div class="ex-sec">
