@@ -14,7 +14,7 @@ REGRAS DE OURO:
 CAMPOS E OPCOES VALIDAS (retornar a STRING exata da opcao escolhida, ou null):
 
 NEUROLOGICO:
-- "ncons": ["Acordado e orientado (A+O×3)","Acordado e desorientado","Sonolento, responde a estímulo verbal","Torporoso, responde a dor","Comatoso, sem resposta","Sedoanalgesia profunda (RASS -4/-5)","Sedoanalgesia leve/moderada (RASS -2/-3)"]
+- "ncons": ["Acordado e orientado (tempo, espaço e pessoa)","Acordado e desorientado","Sonolento, responde a estímulo verbal","Torporoso, responde a dor","Comatoso, sem resposta","Sedoanalgesia profunda (RASS -4/-5)","Sedoanalgesia leve/moderada (RASS -2/-3)"]
 - "pup": ["Isocóricas e fotorreagentes","Isocóricas, fotorreagentes lentas","Anisocoria","Midríase bilateral arreativa","Miose bilateral","Não avaliável"]
 - "rass": ["-5","-4","-3","-2","-1","0","+1","+2","+3","+4"]
 - "cam": ["Positivo","Negativo","Não avaliável"]
