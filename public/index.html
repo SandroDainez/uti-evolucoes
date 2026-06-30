@@ -2702,6 +2702,13 @@ REGRAS CLINICAS OBRIGATORIAS:
 
 19e. UNIFORMIDADE - TODAS estas regras de formato (negrito, espacamentos, um item por linha, datas com 4 digitos, exames/interconsultas com nome+data em negrito, pendencias em negrito) valem IGUALMENTE para ADMISSAO, DIURNO, NOTURNO e DIARISTA. Cada tipo mantem apenas suas secoes proprias de conteudo.
 
+19f. INDIVIDUALIZACAO, UM-POR-LINHA E COERENCIA SEMIOLOGICA (OBRIGATORIO em TODOS os tipos, inclusive DIARISTA no formato dela):
+   (a) UM ITEM POR LINHA, SEM BARRAS: em MEDICACOES DE USO CONTINUO, ANTIMICROBIANOS EM USO, ANTIMICROBIANOS JA UTILIZADOS, EXAMES DE MAIOR IMPORTANCIA e INTERCONSULTAS, cada item fica em SUA PROPRIA LINHA, um abaixo do outro. PROIBIDO juntar itens numa mesma linha separados por "/" ou virgula. UNICA excecao: combinacao fixa num MESMO produto/apresentacao (ex: PIPERACILINA + TAZOBACTAM, SULFAMETOXAZOL + TRIMETOPRIMA) — esses ficam juntos numa linha so. "VANCOMICINA + MEROPENEM" usados juntos no mesmo periodo: aceitavel manter "+" se foram o mesmo esquema, mas cada ESQUEMA/periodo distinto em sua propria linha.
+   (b) ORDEM CRONOLOGICA: MEDICACOES DE USO CONTINUO, EXAMES DE MAIOR IMPORTANCIA e INTERCONSULTAS em ordem do MAIS ANTIGO para o MAIS NOVO (quando houver datas).
+   (c) INDIVIDUALIZAR AO CASO: escrever conforme o paciente real. NUNCA usar frases genericas de preenchimento. NAO incluir secoes, condutas ou achados que NAO se aplicam a este paciente.
+   (d) [COMPLEMENTAR] SOMENTE quando o dado for clinicamente NECESSARIO ao tipo de evolucao E pertinente ao contexto do paciente. NAO pedir complemento de itens irrelevantes ao caso: ex. NAO pedir parametros de ventilacao mecanica se o paciente NAO esta em VM; NAO pedir RASS se nao ha sedacao; NAO pedir dado de droga vasoativa se nao ha DVA. Se o campo nao se aplica ao caso, OMITIR (nao usar [COMPLEMENTAR]).
+   (e) PADRAO SEMIOLOGICO: nao registrar combinacoes sem sentido semiologico. Se um dado fornecido for clinicamente incoerente/improvavel, NAO reproduzir cegamente — sinalizar para revisao (ver Regra 22). Usar terminologia e construcao semiologica corretas em cada campo.
+
 20. CONDUTAS - em ORDEM DE PRIORIDADE e bem descritas. Incluir APENAS as condutas PRINCIPAIS e as que foram REALMENTE adotadas/decididas no periodo (reposicao volemica, correcao eletrolitica, passagem de cateter central, intubacao, troca/ajuste de antimicrobianos, etc.). NAO gerar lista exaustiva de exames/dosagens possiveis nem condutas genericas — proibido produzir dezenas de itens. Maximo de ~10 condutas, focadas no caso. Sugestoes de exames detalhadas ficam no bloco "EXAMES A CONSIDERAR" das pendencias, nao nas CONDUTAS.
    COERENCIA COM EXAMES: antes de finalizar, CONFERIR a secao EXAMES DE MAIOR IMPORTANCIA. Se o RESULTADO de um exame JA estiver disponivel ali, NAO escrever conduta do tipo "aguardar laudo/resultado" desse exame. Em vez disso, atualizar a conduta para refletir o resultado (ex: se a TC ja tem laudo em EXAMES, a conduta deve abordar a INTERPRETACAO/PROXIMO PASSO conforme o achado, nao "aguardar TC"). So manter "aguardar resultado/laudo" para exames que realmente ainda NAO tem resultado. As condutas devem estar coerentes com TODOS os dados ja disponiveis na evolucao (exames, anexos extraidos, novas informacoes).
 
@@ -3136,18 +3143,18 @@ const EX_OPTS = {
   ncons: ["Acordado e orientado (tempo, espaço e pessoa)","Acordado e desorientado","Sonolento, responde a estímulo verbal","Torporoso, responde a dor","Comatoso, sem resposta","Sedoanalgesia profunda (RASS -4/-5)","Sedoanalgesia leve/moderada (RASS -2/-3)"],
   pup: ["Isocóricas e fotorreagentes","Isocóricas, fotorreagentes lentas","Anisocoria","Midríase bilateral arreativa","Miose bilateral","Não avaliável"],
   cam: ["Positivo","Negativo","Não avaliável"],
-  padr: ["Eupneico, sem esforço","Taquipneico, sem esforço ventilatório aumentado","Uso de musculatura acessória","Tiragem intercostal/supraesternal","Em VM — modo controlado","Em VM — modo espontâneo assistido","Em ventilação espontânea"],
-  mv: ["Presente e simétrico","Reduzido globalmente","Reduzido à direita","Reduzido à esquerda","Reduzido bilateralmente","Ausente à direita","Abolido bilateralmente"],
-  adv: ["Ausentes","Crepitações bibasais","Crepitações difusas","Sibilos difusos expiratórios","Roncos difusos","Atrito pleural"],
-  o2: ["Ar ambiente","Cateter nasal","Máscara de Venturi","CNAF (alto fluxo)","VNI (CPAP/BiPAP)","VM invasiva","Traqueostomia em VM"],
-  vmodo: ["VCV","PCV","PSV","SIMV"],
-  ritmo: ["Ritmo sinusal regular","Fibrilação atrial (ritmo irregularmente irregular)","Taquicardia sinusal","Bradicardia sinusal","Marca-passo em estimulação"],
-  aust: ["Bulhas rítmicas normofonéticas, sem sopros","Bulhas arrítmicas, sem sopros","Sopro sistólico","Bulhas hipofonéticas"],
-  perf: ["TEC <3s, extremidades aquecidas","TEC 3–5s, extremidades frias","TEC >5s, livedo reticular","Extremidades cianóticas e frias"],
-  edema: ["Ausente","+1 (tornozelos)","+2 (terço inferior das pernas)","+3 (joelhos)","+4 (coxas)","Anasarca"],
-  abd: ["Flácido, indolor","Distendido, timpânico","Dor difusa à palpação","Defesa abdominal","Rigidez em tábua (peritonismo)","Não avaliável (sedado)"],
+  padr: ["Eupneico, sem esforço","Taquipneico, sem esforço aumentado","Taquipneico com esforço ventilatório","Uso de musculatura acessória","Tiragem intercostal/supraesternal","Respiração paradoxal","Bradipneico","Em VM — modo controlado","Em VM — modo espontâneo assistido","Em ventilação espontânea"],
+  mv: ["Presente e simétrico","Reduzido globalmente","Reduzido em bases","Reduzido em base direita","Reduzido em base esquerda","Reduzido à direita","Reduzido à esquerda","Reduzido bilateralmente","Ausente à direita","Ausente à esquerda","Abolido bilateralmente"],
+  adv: ["Ausentes (limpo)","Crepitações em base direita","Crepitações em base esquerda","Crepitações bibasais","Crepitações difusas","Estertores grossos difusos","Sibilos difusos expiratórios","Sibilos localizados","Roncos difusos","Roncos esparsos","Atrito pleural","Estridor"],
+  o2: ["Ar ambiente","Cateter nasal","Máscara de Venturi","Máscara não reinalante","Máscara de nebulização","CNAF (alto fluxo)","VNI (CPAP/BiPAP)","Traqueostomia (O2 suplementar)","VM invasiva","Traqueostomia em VM"],
+  vmodo: ["VCV","PCV","PSV","SIMV","PAV","APRV"],
+  ritmo: ["Ritmo sinusal regular","Taquicardia sinusal","Bradicardia sinusal","Fibrilação atrial (irregularmente irregular)","Flutter atrial","Extrassistolia frequente","Ritmo de marca-passo","Taquicardia supraventricular","Ritmo idioventricular"],
+  aust: ["Bulhas rítmicas normofonéticas, sem sopros","Bulhas rítmicas, sopro sistólico","Bulhas rítmicas, sopro diastólico","Bulhas arrítmicas, sem sopros","Bulhas arrítmicas com sopro","Bulhas hipofonéticas","Bulhas hiperfonéticas","Presença de B3/B4","Atrito pericárdico"],
+  perf: ["TEC <3s, extremidades aquecidas","TEC 3–5s, extremidades frias","TEC >5s, livedo reticular","Extremidades cianóticas e frias","Extremidades quentes e bem perfundidas"],
+  edema: ["Ausente","+1 (tornozelos)","+2 (terço inferior das pernas)","+3 (joelhos)","+4 (coxas)","Anasarca","Edema localizado/assimétrico"],
+  abd: ["Plano, flácido, indolor","Globoso, flácido, indolor","Distendido, timpânico","Distendido, doloroso","Doloroso à palpação difusa","Doloroso localizado","Defesa abdominal","Rigidez em tábua (peritonismo)","Ascítico","Não avaliável (sedado)"],
   rha: ["Presentes e normais","Aumentados","Reduzidos","Ausentes"],
-  diet: ["Dieta oral aceita bem","NPO — jejum indicado","SNE em nutrição enteral","Nutrição parenteral total"],
+  diet: ["Dieta oral aceita bem","Dieta oral branda/pastosa","Dieta zero (jejum para procedimento)","NPO — jejum indicado","SNE em nutrição enteral","Nutrição enteral por GTT","Nutrição parenteral total","Nutrição enteral + parenteral"],
   urina: ["Amarelo-clara (normal)","Concentrada (âmbar)","Oligúria (<0,5 mL/kg/h)","Hematúria macroscópica","Em TRS"],
   pele: ["Normocorada, hidratada, anictérica","Pálida, hidratada, anictérica","Ictérica (+2/4)","Ictérica (+3/4 ou +4/4)","Cianótica periférica","Maculopapular (rash)","Petéquias / equimoses"],
   lpp: ["Ausente","Estágio I (hiperemia reativa)","Estágio II (perda da derme)","Estágio III (tecido subcutâneo)","Estágio IV (músculo/osso)"],
@@ -3453,7 +3460,7 @@ const EX_O2 = [
 ];
 let _exO2 = {};
 function exMatchO2(s){
-  const n = (s||'').toLowerCase();
+  const n = (typeof s === 'string' ? s : '').toLowerCase();
   if (/ar ambiente/.test(n)) return 'ar';
   if (/venturi/.test(n)) return 'vent';
   if (/reinal/.test(n)) return 'nrein';
@@ -3467,11 +3474,16 @@ function exMatchO2(s){
 }
 function renderO2(val){
   _exO2 = {};
-  const pre = exMatchO2(val); if (pre) _exO2[pre] = '';
+  // aceita: array [{tipo,valor}] (nova extração) ou string única (legado)
+  if (Array.isArray(val)){
+    val.forEach(it => { const id = exMatchO2((it && (it.tipo||it.label||it.nome)) || ''); if (id) _exO2[id] = ((it && (it.valor||it.flow||it.fluxo)) || '').toString().trim(); });
+  } else if (typeof val === 'string' && val.trim()){
+    const pre = exMatchO2(val); if (pre) _exO2[pre] = '';
+  }
   const filled = Object.keys(_exO2).length > 0;
   const items = EX_O2.map(o => {
     const on = (o.id in _exO2);
-    const pin = o.unit ? `<input class="ex-inp ex-o2p" id="ex_o2p_${o.id}" placeholder="${exEsc(o.unit)}" style="display:${on?'inline-block':'none'}" oninput="exO2Sync()">` : '';
+    const pin = o.unit ? `<input class="ex-inp ex-o2p" id="ex_o2p_${o.id}" placeholder="${exEsc(o.unit)}" value="${on?exEsc(_exO2[o.id]):''}" style="display:${on?'inline-block':'none'}" oninput="exO2Sync()">` : '';
     return `<div class="ex-o2-item"><span class="ex-chip o2${on?' active':''}" data-o2="${o.id}" onclick="exO2Toggle('${o.id}')">${exEsc(o.label)}</span>${pin}</div>`;
   }).join('');
   return `<div class="ex-field full" id="exf_o2"><label class="ex-label">Suporte de O2 / ventilação ${filled?'<span class="ex-badge ok">extraído</span>':'<span class="ex-badge miss">preencher</span>'}<span class="ex-skiplink" onclick="exToggleSkip('o2')">s/ dado</span></label>
@@ -3664,7 +3676,9 @@ function exAddAtb(){ document.getElementById('ex_atb_list').insertAdjacentHTML('
 // monta todo o formulário a partir do JSON extraído
 function renderExameForm(p){
   p = p || {};
-  const vm = ['vm','tqtvm'].includes(exMatchO2(p.o2));
+  const vm = Array.isArray(p.o2)
+    ? p.o2.some(it => ['vm','tqtvm'].includes(exMatchO2((it && (it.tipo||it.label||it.nome)) || '')))
+    : ['vm','tqtvm'].includes(exMatchO2(p.o2 || ''));
   const isDiurnoAdm = (currentType === 'diurno' || currentType === 'admissao');
   _exSkip = new Set();
   _exWarnShown = false;
