@@ -6540,16 +6540,18 @@ async function gerarPassagem(setor) {
     const todos = pacientes.filter(Boolean);
     const ocupados = todos.filter(p => p.setor === setor);
 
-    // Leitos configurados do setor (para mostrar os vagos). Casamento sem caixa.
+    // Leitos configurados do setor (para mostrar os vagos).
+    // Casamento normalizado: ignora caixa e zeros à esquerda ("01"="1", "06"="6"); mantém não-numéricos (ex: ISOLAMENTO).
+    const normBed = b => { const s = String(b || '').trim().toUpperCase(); return /^\d+$/.test(s) ? String(parseInt(s, 10)) : s; };
     const bedsCfg = parseBeds(_passBeds[setor] || '');
-    const cfgUpper = bedsCfg.map(b => b.toUpperCase());
-    const byBed = {}; ocupados.forEach(p => { if (p.leito) byBed[p.leito.toUpperCase()] = p; });
+    const cfgNorm = bedsCfg.map(normBed);
+    const byBed = {}; ocupados.forEach(p => { if (p.leito) byBed[normBed(p.leito)] = p; });
 
     // Montar roster ordenado: leitos configurados + leitos ocupados fora da config
     let roster = [];
     if (bedsCfg.length) {
-      bedsCfg.forEach(b => roster.push({ bed: b, p: byBed[b.toUpperCase()] || null }));
-      ocupados.forEach(p => { if (!p.leito || !cfgUpper.includes(p.leito.toUpperCase())) roster.push({ bed: p.leito || '', p }); });
+      bedsCfg.forEach(b => roster.push({ bed: b, p: byBed[normBed(b)] || null }));
+      ocupados.forEach(p => { if (!p.leito || !cfgNorm.includes(normBed(p.leito))) roster.push({ bed: p.leito || '', p }); });
     } else {
       ocupados.slice().sort((a, b) => {
         if (!a.leito && !b.leito) return 0; if (!a.leito) return 1; if (!b.leito) return -1;
