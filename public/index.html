@@ -7336,14 +7336,16 @@ async function showFichasList() {
   const content = document.getElementById('fichasListContent');
   content.innerHTML = '<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">Carregando...</div>';
   try {
-    const res = await fetch('/api/fichas?action=list');
-    const fichas = await res.json();
-    if (!fichas.length) {
+    const all = await listFichasAll(); // local + ficha-exames
+    const locais = all.filter(f => f._src !== 'remote');
+    const nomesLocais = new Set(locais.map(f => normNome(f.patNome)));
+    const remotas = all.filter(f => f._src === 'remote' && !nomesLocais.has(normNome(f.patNome)));
+    if (!locais.length && !remotas.length) {
       content.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px;">Nenhuma ficha salva ainda.<br>Crie uma nova ficha e salve para começar.</div>';
       return;
     }
-    content.innerHTML = fichas.map(f => {
-      const dt = new Date(f.updatedAt).toLocaleDateString('pt-BR');
+    const cardLocal = f => {
+      const dt = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString('pt-BR') : '';
       const isActive = f.id === currentFichaId;
       return `
         <div style="display:flex;align-items:center;gap:10px;background:${isActive ? 'rgba(0,212,255,0.08)' : 'var(--surface2)'};border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-radius:10px;padding:12px 14px;">
@@ -7352,9 +7354,26 @@ async function showFichasList() {
             <div style="font-size:11px;color:var(--text3);">Atualizado em ${dt}</div>
           </div>
           <button class="hint-chip" onclick="loadFicha('${f.id}')" style="font-size:11px;">📂 Abrir</button>
-          <button onclick="deleteFicha('${f.id}','${f.patNome}')" style="background:rgba(255,68,102,0.12);border:1px solid rgba(255,68,102,0.35);color:var(--danger);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:inherit;display:flex;align-items:center;gap:5px;">🗑️ Excluir</button>
+          <button onclick="deleteFicha('${f.id}','${(f.patNome||'').replace(/'/g,'')}')" style="background:rgba(255,68,102,0.12);border:1px solid rgba(255,68,102,0.35);color:var(--danger);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:inherit;display:flex;align-items:center;gap:5px;">🗑️ Excluir</button>
         </div>`;
-    }).join('');
+    };
+    const cardRemoto = f => {
+      const dt = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString('pt-BR') : '';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px dashed var(--accent);border-radius:10px;padding:12px 14px;">
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:13px;">📥 ${f.patNome} <span style="color:var(--accent);font-size:10px;">(ficha-exames)</span></div>
+            <div style="font-size:11px;color:var(--text3);">Atualizado em ${dt} · importar para este app</div>
+          </div>
+          <button class="hint-chip" onclick="importFichaRemote('${f.id}','${(f.patNome||'').replace(/'/g,'')}')" style="font-size:11px;">📥 Importar</button>
+        </div>`;
+    };
+    let html = locais.map(cardLocal).join('');
+    if (remotas.length) {
+      html += `<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:10px 2px 4px;">Do app ficha-exames (importar para cá)</div>`;
+      html += remotas.map(cardRemoto).join('');
+    }
+    content.innerHTML = html;
   } catch(e) {
     content.innerHTML = `<div style="color:var(--danger);font-size:13px;text-align:center;padding:20px;">Erro ao carregar fichas.</div>`;
   }
