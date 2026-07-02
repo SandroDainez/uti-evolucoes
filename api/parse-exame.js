@@ -40,7 +40,7 @@ CARDIOVASCULAR:
 - "edema": uma de ["Ausente","+1 (tornozelos)","+2 (terço inferior das pernas)","+3 (joelhos)","+4 (coxas)","Anasarca","Edema localizado/assimétrico"]
 
 MEDICACOES EM INFUSAO CONTINUA:
-- "infusoes": array de {"nome": string, "rate": <velocidade em mL/h se houver>, "dose": <dose se vier pronta>}. Incluir vasoativas (noradrenalina, adrenalina, dobutamina, vasopressina, dopamina, nitroprussiato, nitroglicerina), sedacao/analgesia (propofol, midazolam, fentanil, precedex/dexmedetomidina, quetamina, morfina), bloqueador neuromuscular (cisatracurio, rocuronio, atracurio) e outras (amiodarona). Reproduzir nome e valores como no texto. Senao, [].
+- "infusoes": array de {"nome": string, "rate": <velocidade em mL/h se houver>, "dose": <dose se vier pronta>}. Incluir vasoativas (noradrenalina, adrenalina, dobutamina, vasopressina, dopamina, nitroprussiato, nitroglicerina), sedacao/analgesia (propofol, midazolam, fentanil, precedex/dexmedetomidina, cetamina=quetamina=ketamina — mesma medicacao, qualquer grafia, morfina), bloqueador neuromuscular (cisatracurio, rocuronio, atracurio) e outras (amiodarona). Reproduzir nome e valores como no texto. Senao, [].
 
 ABDOME / DIGESTIVO:
 - "abd": uma de ["Plano, flácido, indolor","Globoso, flácido, indolor","Distendido, timpânico","Distendido, doloroso","Doloroso à palpação difusa","Doloroso localizado","Defesa abdominal","Rigidez em tábua (peritonismo)","Ascítico","Não avaliável (sedado)"]

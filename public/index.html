@@ -2611,6 +2611,7 @@ REGRAS CLINICAS OBRIGATORIAS:
     TAZOCIN → TAZOCIN (PIPERACILINA + TAZOBACTAM)
     ATENCAO — SO acrescentar o principio ativo quando a medicacao for NOME COMERCIAL/MARCA. Se o nome JA FOR o proprio principio ativo (nome generico), NAO acrescentar NADA entre parenteses. Exemplos de nomes que JA SAO o principio ativo (NAO colocar parenteses): FINASTERIDA, DOXAZOSINA, OMEPRAZOL, PANTOPRAZOL, ENOXAPARINA, NORADRENALINA, LOSARTANA, ANLODIPINO, METFORMINA, LEVOTIROXINA, FUROSEMIDA, ESPIRONOLACTONA, CARVEDILOL, SINVASTATINA, CLOPIDOGREL, DIPIRONA, MIDAZOLAM, FENTANIL, PROPOFOL, VANCOMICINA, MEROPENEM, etc.
     PROIBIDO usar placeholders como "(PRINCIPIO ATIVO - CONFIRMAR)", "(PRINCIPIO ATIVO)", "(CONFIRMAR)" — NUNCA escrever isso. Se for uma MARCA e voce nao tiver certeza do principio ativo, deixar apenas o nome como esta, SEM parenteses. Placeholder e pior que nada.
+    SINONIMOS/GRAFIAS DA MESMA MEDICACAO: tratar como A MESMA medicacao, independente da grafia digitada: CETAMINA = KETAMINA = QUETAMINA (cetamina). Usar UMA grafia de forma consistente na evolucao (preferir CETAMINA) e nao listar duas vezes.
     OBRIGATORIO E SEM EXCECAO: aplicar a TODAS as medicacoes por nome comercial, em TODAS as secoes — nao deixar NENHUMA marca sem o principio ativo entre parenteses. Antes de finalizar, RELER a evolucao e conferir cada medicacao: se for marca/nome comercial e estiver SEM "(principio ativo)", acrescentar. Outros exemplos: PURAN T4 (LEVOTIROXINA), GLIFAGE (METFORMINA), AAS (ACIDO ACETILSALICILICO), CLEXANE (ENOXAPARINA), DORMONID (MIDAZOLAM), PRECEDEX (DEXMEDETOMIDINA), DIPRIVAN (PROPOFOL), TYLENOL (PARACETAMOL), NOVALGINA (DIPIRONA), TIENAM (IMIPENEM + CILASTATINA), ROCEFIN (CEFTRIAXONA), AVALOX (MOXIFLOXACINO), VANCOCINA (VANCOMICINA), TRACRIUM (ATRACURIO).
 
 14. EXAMES DE MAIOR IMPORTANCIA - FORMATO: NOME DO EXAME (em destaque/negrito), seguido da DATA quando houver, depois ":" e a DESCRICAO/resultado (a descricao NAO fica em negrito). UM exame por linha, em ORDEM CRONOLOGICA (mais antigo primeiro). INTERCONSULTAS seguem o mesmo: ESPECIALIDADE + DATA: avaliacao/conduta, uma por linha, em ordem cronologica.
@@ -3203,7 +3204,7 @@ const EX_DRUGS = [
   { id:'midazolam',nome:'Midazolam',  label:'Midazolam (1 mg/mL)',                cat:'sed',  conc:1,   kind:'mgkgh' },
   { id:'fentanil',nome:'Fentanil',    label:'Fentanil (50 mcg/mL)',               cat:'sed',  conc:50,  kind:'mcgkgmin' },
   { id:'precedex',nome:'Dexmedetomidina',label:'Precedex / Dexmedetomidina (1,6 mcg/mL)',cat:'sed',conc:1.6,kind:'mcgkgh' },
-  { id:'quetamina',nome:'Quetamina',  label:'Quetamina (2 mg/mL)',                cat:'sed',  conc:2,   kind:'mgkgh' },
+  { id:'quetamina',nome:'Cetamina',  label:'Cetamina / Quetamina / Ketamina (2 mg/mL)', cat:'sed',  conc:2,   kind:'mgkgh' },
   { id:'morfina',nome:'Morfina',      label:'Morfina (1000 mcg/mL)',              cat:'sed',  conc:1000,kind:'mcgkgmin' },
   { id:'cisatracurio',nome:'Cisatracúrio',label:'Cisatracúrio (400 mcg/mL)',      cat:'bnm',  conc:400, kind:'mcgkgmin' },
   { id:'rocuronio',nome:'Rocurônio',  label:'Rocurônio (2 mg/mL)',                cat:'bnm',  conc:2,   kind:'mgkgh' },
@@ -3231,7 +3232,7 @@ function exMatchDrug(nome){
   const map = [['noradr','nora1'],['nora','nora1'],['adren','adre'],['dobu','dobu'],['dopa','dopa'],
     ['vasopr','vaso'],['nipr','nipride'],['nitroprus','nipride'],['nitrogli','ntg'],['tridil','ntg'],
     ['propofol','propofol'],['midaz','midazolam'],['dormonid','midazolam'],['fentan','fentanil'],
-    ['precedex','precedex'],['dexmedet','precedex'],['quetam','quetamina'],['ketam','quetamina'],['morfina','morfina'],
+    ['precedex','precedex'],['dexmedet','precedex'],['quetam','quetamina'],['ketam','quetamina'],['cetam','quetamina'],['morfina','morfina'],
     ['cisatrac','cisatracurio'],['nimbex','cisatracurio'],['rocur','rocuronio'],['atracur','atracurio'],['amiodar','amiodarona']];
   for (const [k,id] of map){ if (n.includes(k)) return id; }
   return null;
@@ -3702,7 +3703,7 @@ function renderExameForm(p){
   ['ncons','pup','o2','padr','mv','adv','spo2','fr','fc','pas','pad','ritmo','aust','perf','edema','abd','rha','diet','urina','pele'].forEach(k=>count(p[k]));
 
   // contexto de sedação → define se RASS é esperado
-  const sedContext = /sed|rass|coma|torpor/i.test(String(p.ncons||'')) || exHas(p.rass) || (Array.isArray(p.infusoes) && p.infusoes.some(i=>/propofol|midaz|fentan|precedex|dexmed|quetam|morfina|cisatrac|rocur|atracur/i.test(i.nome||'')));
+  const sedContext = /sed|rass|coma|torpor/i.test(String(p.ncons||'')) || exHas(p.rass) || (Array.isArray(p.infusoes) && p.infusoes.some(i=>/propofol|midaz|fentan|precedex|dexmed|quetam|ketam|cetam|morfina|cisatrac|rocur|atracur/i.test(i.nome||'')));
 
   // linhas iniciais de infusão a partir da extração
   let infRows = [];
