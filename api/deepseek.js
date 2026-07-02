@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API key not configured on server' });
   }
 
-  const { messages, systemPrompt, model = 'deepseek-chat', temperature = 0.2, max_tokens = 4000 } = req.body;
+  const { messages, systemPrompt, model = 'deepseek-chat', temperature = 0.2, max_tokens = 8000 } = req.body;
 
   // Validar entrada
   if (!messages || !Array.isArray(messages)) {

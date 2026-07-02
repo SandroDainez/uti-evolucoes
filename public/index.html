@@ -3120,7 +3120,7 @@ async function callDeepSeek(systemPrompt, messages) {
       messages,
       model: 'deepseek-chat',
       temperature: 0.2,
-      max_tokens: 4000
+      max_tokens: 8000
     })
   });
 
@@ -3131,6 +3131,10 @@ async function callDeepSeek(systemPrompt, messages) {
   }
 
   const data = await response.json();
+  // Rede de segurança: avisar se a resposta foi cortada por limite de tamanho
+  if (data.choices?.[0]?.finish_reason === 'length') {
+    showToast('⚠️ A resposta pode ter sido cortada por tamanho. Gere novamente ou reduza o texto de entrada.', 'error');
+  }
   return data.choices?.[0]?.message?.content || '';
 }
 
