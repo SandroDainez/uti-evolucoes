@@ -7254,25 +7254,29 @@ let _fichasCache = [];
 async function renderFichasInline() {
   const list = document.getElementById('fichasInlineList');
   if (!list) return;
+  let all;
   try {
-    const res = await fetch('/api/fichas?action=list');
-    const fichas = await res.json();
-    _fichasCache = Array.isArray(fichas) ? fichas : [];
+    all = await listFichasAll(); // local + ficha-exames (remoto)
+    _fichasCache = all.filter(f => f._src !== 'remote');
   } catch(e) {
     list.innerHTML = '<div style="color:var(--danger);font-size:12px;text-align:center;padding:12px;">Erro ao carregar fichas.</div>';
     return;
   }
 
   const termo = (document.getElementById('fichaBusca')?.value || '').trim().toLowerCase();
-  let fichas = _fichasCache;
-  if (termo) fichas = fichas.filter(f => (f.patNome||'').toLowerCase().includes(termo));
+  // Fichas locais e remotas (ficha-exames). Não mostrar remota se já existe local com mesmo nome.
+  const locais = all.filter(f => f._src !== 'remote');
+  const nomesLocais = new Set(locais.map(f => normNome(f.patNome)));
+  let remotas = all.filter(f => f._src === 'remote' && !nomesLocais.has(normNome(f.patNome)));
+  let fichas = locais.slice();
+  if (termo) { fichas = fichas.filter(f => (f.patNome||'').toLowerCase().includes(termo)); remotas = remotas.filter(f => (f.patNome||'').toLowerCase().includes(termo)); }
 
-  if (!fichas.length) {
+  if (!fichas.length && !remotas.length) {
     list.innerHTML = `<div style="color:var(--text3);font-size:12px;text-align:center;padding:16px;">${termo ? 'Nenhum paciente encontrado.' : 'Nenhuma ficha salva ainda. Preencha e clique em 💾 Salvar Ficha.'}</div>`;
     return;
   }
 
-  list.innerHTML = fichas.map(f => {
+  const cardLocal = f => {
     const dt = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString('pt-BR') : '';
     const isActive = f.id === currentFichaId;
     return `
@@ -7285,7 +7289,46 @@ async function renderFichasInline() {
         <button onclick="loadFicha('${f.id}')" style="background:var(--accent);color:#000;border:none;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">📂 Abrir</button>
         <button onclick="deleteFicha('${f.id}','${(f.patNome||'').replace(/'/g,'')}')" style="background:rgba(255,68,102,0.12);border:1px solid rgba(255,68,102,0.35);color:var(--danger);border-radius:7px;padding:6px 10px;cursor:pointer;font-size:12px;font-family:inherit;">🗑️</button>
       </div>`;
-  }).join('');
+  };
+  const cardRemoto = f => {
+    const dt = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString('pt-BR') : '';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px dashed var(--accent);border-radius:8px;padding:9px 12px;">
+        <span style="font-size:16px;">📥</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.patNome} <span style="color:var(--accent);font-size:10px;">(ficha-exames)</span></div>
+          <div style="font-size:10px;color:var(--text3);">Atualizado em ${dt} · não está neste app</div>
+        </div>
+        <button onclick="importFichaRemote('${f.id}','${(f.patNome||'').replace(/'/g,'')}')" style="background:var(--accent);color:#000;border:none;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;">📥 Importar</button>
+      </div>`;
+  };
+  let html = fichas.map(cardLocal).join('');
+  if (remotas.length) {
+    html += `<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 2px 2px;">Do app ficha-exames (importar para cá)</div>`;
+    html += remotas.map(cardRemoto).join('');
+  }
+  list.innerHTML = html;
+}
+
+// Importa uma ficha do app ficha-exames: carrega os exames na tabela e SALVA neste app.
+async function importFichaRemote(id, nome) {
+  try {
+    showToast('Importando ficha do ficha-exames...', 'success');
+    const r = await fetch(`/api/fichas-remote?action=load&id=${id}&cb=${Date.now()}`, { cache: 'no-store' });
+    const ficha = await r.json();
+    if (!r.ok || !ficha) throw new Error((ficha && ficha.error) || 'não foi possível carregar');
+    // abrir como ficha nova neste app e aplicar os dados importados
+    currentFichaId = null;
+    currentFichaName = ficha.patNome || nome || '';
+    const nomeEl = document.getElementById('fichaPatNome'); if (nomeEl) nomeEl.value = ficha.patNome || nome || '';
+    applyFichaData(ficha.data || {});
+    // salvar neste app (persiste; se já houver ficha local do mesmo nome, o save mescla)
+    if (typeof saveFichaToServer === 'function') await saveFichaToServer();
+    showToast(`✅ Exames de ${ficha.patNome || nome} importados e salvos neste app.`, 'success');
+    if (typeof renderFichasInline === 'function') renderFichasInline();
+  } catch (e) {
+    showToast('Erro ao importar: ' + e.message, 'error');
+  }
 }
 
 async function showFichasList() {
