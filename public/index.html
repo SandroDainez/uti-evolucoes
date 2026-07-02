@@ -5287,7 +5287,8 @@ const FICHA_ROWS = [
   // Hemograma
   { key: 'HB',         label: 'HB',            cat: 'Hemograma' },
   { key: 'HT',         label: 'HT',            cat: 'Hemograma' },
-  { key: 'VCM_HCM',    label: 'VCM/HCM',      cat: 'Hemograma' },
+  { key: 'VCM',        label: 'VCM',           cat: 'Hemograma' },
+  { key: 'HCM',        label: 'HCM',           cat: 'Hemograma' },
   { key: 'LEUCOCITOS', label: 'Leucócitos',    cat: 'Hemograma' },
   { key: 'NEUTROFILOS',label: 'Neutrófilos',   cat: 'Hemograma' },
   { key: 'BASTONETES', label: 'Bastonetes',    cat: 'Hemograma' },
@@ -6917,7 +6918,33 @@ function getFichaData() {
   return { dates, values, ...header, _cols: fichaCols, sofaHistory };
 }
 
+// Migra o campo antigo combinado VCM_HCM para os campos separados VCM e HCM.
+// "90/30" → VCM 90, HCM 30. Valor único: >=45 = VCM (fL ~70-110), <45 = HCM (pg ~25-35).
+function migrateFichaData(data) {
+  if (!data || !data.values) return data;
+  const values = { ...data.values };
+  let changed = false;
+  Object.keys(values).forEach(k => {
+    const i = k.lastIndexOf('_'); const test = k.slice(0, i), col = k.slice(i + 1);
+    if (test === 'VCM_HCM') {
+      const raw = String(values[k]).trim();
+      delete values[k]; changed = true;
+      if (!raw) return;
+      if (raw.includes('/')) {
+        const [a, b] = raw.split('/').map(s => s.trim());
+        if (a) values[`VCM_${col}`] = a;
+        if (b) values[`HCM_${col}`] = b;
+      } else {
+        const n = parseFloat(raw.replace(',', '.'));
+        values[((!isNaN(n) && n < 45) ? 'HCM_' : 'VCM_') + col] = raw;
+      }
+    }
+  });
+  return changed ? { ...data, values } : data;
+}
+
 function applyFichaData(data) {
+  data = migrateFichaData(data);
   sofaHistory = Array.isArray(data.sofaHistory) ? data.sofaHistory.slice() : [];
   renderSofaHist();
   // Restaurar número de colunas se salvo
@@ -7048,7 +7075,7 @@ async function fetchPatientLabs(patNome) {
     const match = cands[0];
     const ficha = await loadFichaAny(match);
     if (!ficha) return '';
-    const data = ficha.data || {};
+    const data = migrateFichaData(ficha.data || {});
     const dates = data.dates || {};
     const values = data.values || {};
     if (!Object.keys(values).length) return '';
@@ -7343,7 +7370,7 @@ async function importFichaRemote(id, nome) {
     const ficha = await r.json();
     if (!r.ok || !ficha) throw new Error((ficha && ficha.error) || 'não foi possível carregar');
     const pat = ficha.patNome || nome || '';
-    const cleanData = compactFichaData(ficha.data || {});
+    const cleanData = migrateFichaData(compactFichaData(ficha.data || {}));
     cleanData.fichaPatNome = pat;
     // Se já existe ficha LOCAL do mesmo nome, sobrescreve (não duplica).
     let existingId = null;
@@ -7855,7 +7882,7 @@ function fillLabsFromAI(data) {
     'TROPONINA_I': 'TROPONINA', 'TROPONINA_T': 'TROPONINA',
     'TAP': 'TAP', 'INR': 'INR', 'TTPA': 'TTPA',
     'HEMOGLOBINA': 'HB', 'HEMATOCRITO': 'HT',
-    'VCM': 'VCM_HCM', 'HCM': 'VCM_HCM',
+    'VCM': 'VCM', 'HCM': 'HCM', 'VCM_HCM': 'VCM',
     'LEUCOCITOS': 'LEUCOCITOS', 'NEUTROFILOS': 'NEUTROFILOS',
     'BASTONETES': 'BASTONETES', 'SEGMENTADOS': 'SEGMENTADOS',
     'EOSINOFILOS': 'EOSINOFILOS', 'BASOFILOS': 'BASOFILOS',
