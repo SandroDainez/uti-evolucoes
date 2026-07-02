@@ -5304,13 +5304,18 @@ const FICHA_ROWS = [
   { key: 'LACTATO',    label: 'Lactato art',   cat: null },
   { key: 'DHL',        label: 'DHL',           cat: null },
   { key: 'LDL',        label: 'LDL',           cat: null },
-  { key: 'TGO_TGP',    label: 'TGO/TGP',      cat: null },
+  { key: 'TGO',        label: 'TGO (AST)',     cat: null },
+  { key: 'TGP',        label: 'TGP (ALT)',     cat: null },
   { key: 'BT',         label: 'BT',            cat: null },
-  { key: 'BD_BI',      label: 'BD/BI',         cat: null },
-  { key: 'GGT_FA',     label: 'GGT/FA',        cat: null },
-  { key: 'AMIL_LIP',   label: 'Amilase/Lipase',cat: null },
+  { key: 'BD',         label: 'BD (direta)',   cat: null },
+  { key: 'BI',         label: 'BI (indireta)', cat: null },
+  { key: 'GGT',        label: 'GGT',           cat: null },
+  { key: 'FA',         label: 'FA',            cat: null },
+  { key: 'AMILASE',    label: 'Amilase',       cat: null },
+  { key: 'LIPASE',     label: 'Lipase',        cat: null },
   { key: 'ALBUMINA',   label: 'Albumina',      cat: null },
-  { key: 'TSH_T4',     label: 'TSH/T4 livre',  cat: null },
+  { key: 'TSH',        label: 'TSH',           cat: null },
+  { key: 'T4L',        label: 'T4 livre',      cat: null },
   // Gasometria Arterial
   { key: 'PH_ART',     label: 'PH',            cat: 'Gasometria Art.' },
   { key: 'PCO2_ART',   label: 'PCO2',          cat: 'Gasometria Art.' },
@@ -6918,26 +6923,37 @@ function getFichaData() {
   return { dates, values, ...header, _cols: fichaCols, sofaHistory };
 }
 
-// Migra o campo antigo combinado VCM_HCM para os campos separados VCM e HCM.
-// "90/30" → VCM 90, HCM 30. Valor único: >=45 = VCM (fL ~70-110), <45 = HCM (pg ~25-35).
+// Migra campos antigos COMBINADOS para campos separados.
+// "X/Y" → primeiro/segundo. Valor único vai para o campo primário (parts[0]),
+// exceto VCM/HCM que decide por faixa (>=45 = VCM em fL; <45 = HCM em pg).
+const COMBINED_SPLIT = {
+  'VCM_HCM':  { parts: ['VCM', 'HCM'], range: 45 },
+  'TGO_TGP':  { parts: ['TGO', 'TGP'] },
+  'BD_BI':    { parts: ['BD', 'BI'] },
+  'GGT_FA':   { parts: ['GGT', 'FA'] },
+  'AMIL_LIP': { parts: ['AMILASE', 'LIPASE'] },
+  'TSH_T4':   { parts: ['TSH', 'T4L'] },
+};
 function migrateFichaData(data) {
   if (!data || !data.values) return data;
   const values = { ...data.values };
   let changed = false;
   Object.keys(values).forEach(k => {
     const i = k.lastIndexOf('_'); const test = k.slice(0, i), col = k.slice(i + 1);
-    if (test === 'VCM_HCM') {
-      const raw = String(values[k]).trim();
-      delete values[k]; changed = true;
-      if (!raw) return;
-      if (raw.includes('/')) {
-        const [a, b] = raw.split('/').map(s => s.trim());
-        if (a) values[`VCM_${col}`] = a;
-        if (b) values[`HCM_${col}`] = b;
-      } else {
-        const n = parseFloat(raw.replace(',', '.'));
-        values[((!isNaN(n) && n < 45) ? 'HCM_' : 'VCM_') + col] = raw;
-      }
+    const def = COMBINED_SPLIT[test];
+    if (!def) return;
+    const raw = String(values[k]).trim();
+    delete values[k]; changed = true;
+    if (!raw) return;
+    if (raw.includes('/')) {
+      const [a, b] = raw.split('/').map(s => s.trim());
+      if (a) values[`${def.parts[0]}_${col}`] = a;
+      if (b) values[`${def.parts[1]}_${col}`] = b;
+    } else if (def.range) {
+      const n = parseFloat(raw.replace(',', '.'));
+      values[`${(!isNaN(n) && n < def.range ? def.parts[1] : def.parts[0])}_${col}`] = raw;
+    } else {
+      values[`${def.parts[0]}_${col}`] = raw;
     }
   });
   return changed ? { ...data, values } : data;
@@ -7889,12 +7905,14 @@ function fillLabsFromAI(data) {
     'LINFOCITOS': 'LINFOCITOS', 'PLAQUETAS': 'PLAQUETAS',
     'D_DIMERO': 'D_DIMERO', 'D-DIMERO': 'D_DIMERO', 'DDIMERO': 'D_DIMERO',
     'LACTATO': 'LACTATO', 'DHL': 'DHL', 'LDH': 'DHL', 'LDL': 'LDL',
-    'TGO': 'TGO_TGP', 'TGP': 'TGO_TGP', 'AST': 'TGO_TGP', 'ALT': 'TGO_TGP',
+    'TGO': 'TGO', 'AST': 'TGO', 'TGP': 'TGP', 'ALT': 'TGP',
     'BILIRRUBINA_TOTAL': 'BT', 'BT': 'BT',
-    'BILIRRUBINA_DIRETA': 'BD_BI', 'BD': 'BD_BI',
-    'GGT': 'GGT_FA', 'FA': 'GGT_FA', 'FOSFATASE_ALCALINA': 'GGT_FA',
-    'AMILASE': 'AMIL_LIP', 'LIPASE': 'AMIL_LIP',
-    'ALBUMINA': 'ALBUMINA', 'TSH': 'TSH_T4', 'T4_LIVRE': 'TSH_T4',
+    'BILIRRUBINA_DIRETA': 'BD', 'BD': 'BD', 'BILIRRUBINA_INDIRETA': 'BI', 'BI': 'BI',
+    'GGT': 'GGT', 'GAMA_GT': 'GGT', 'FA': 'FA', 'FOSFATASE_ALCALINA': 'FA',
+    'AMILASE': 'AMILASE', 'LIPASE': 'LIPASE',
+    'ALBUMINA': 'ALBUMINA', 'TSH': 'TSH', 'T4_LIVRE': 'T4L', 'T4L': 'T4L',
+    // compat: chaves combinadas antigas → campo primário
+    'TGO_TGP': 'TGO', 'BD_BI': 'BD', 'GGT_FA': 'GGT', 'AMIL_LIP': 'AMILASE', 'TSH_T4': 'TSH',
     'PH': 'PH_ART', 'PH_ART': 'PH_ART', 'PCO2': 'PCO2_ART', 'PCO2_ART': 'PCO2_ART',
     'PO2': 'PO2_ART', 'PO2_ART': 'PO2_ART', 'HCO3': 'HCO3_ART', 'HCO3_ART': 'HCO3_ART',
     'BE': 'BE_ART', 'BE_ART': 'BE_ART', 'SATO2': 'SATO2_ART', 'SATO2_ART': 'SATO2_ART',
