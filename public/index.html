@@ -4945,14 +4945,14 @@ async function extractImageTextEvo(file, statusElId) {
   return txt || 'Sem texto legível na imagem';
 }
 
-function clearAll() {
-  if (!confirm('Limpar todos os campos para nova evolução?')) return;
-
+// Limpa todos os campos de edição (sem confirmar nem avisar). Usado pelo botão Limpar e após salvar.
+function resetEvolucaoFields() {
   // Limpar identificação
   ['patNome','patLeito','patConvenio','patAdmHosp','patAdmUTI','patSaps'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const setorEl = document.getElementById('patSetor'); if (setorEl) setorEl.value = '';
 
   // Limpar campos de dados
   document.getElementById('clinicalInput').value = '';
@@ -4974,14 +4974,18 @@ function clearAll() {
   const evoFileInput = document.getElementById('evoFileInput');
   if (evoFileInput) evoFileInput.value = '';
 
-  // Resetar conversa e output
+  // Resetar conversa, exame estruturado e output
   conversationHistory = [];
   lastRawOutput = '';
   document.getElementById('outputPanel').style.display = 'none';
   const _exP2 = document.getElementById('examePanel'); if (_exP2) { _exP2.style.display = 'none'; _exameParsed = null; }
   document.getElementById('updateSection').style.display = 'none';
   document.getElementById('outputContent').innerHTML = '';
+}
 
+function clearAll() {
+  if (!confirm('Limpar todos os campos para nova evolução?')) return;
+  resetEvolucaoFields();
   showToast('Campos limpos — pronto para nova evolução!', 'success');
 }
 
@@ -6245,7 +6249,9 @@ async function saveEvolucao() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error('falha ao salvar');
-    showToast(`✅ Evolução de ${patNome} ${idToSave ? 'atualizada' : 'salva'} (${tipo.toUpperCase()} ${fmtBr(dataEvo)})`, 'success');
+    showToast(`✅ Evolução de ${patNome} ${idToSave ? 'atualizada' : 'salva'} — tela limpa para a próxima`, 'success');
+    // Limpar a tela de edição automaticamente para já começar outra evolução
+    resetEvolucaoFields();
   } catch (e) { showToast('Erro ao salvar evolução: ' + e.message, 'error'); }
 }
 
