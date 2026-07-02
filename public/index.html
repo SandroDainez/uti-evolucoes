@@ -2546,7 +2546,8 @@ REGRAS CLINICAS OBRIGATORIAS:
    DROGAS VASOATIVAS: (X) SIM  ( ) NAO
    NORADRENALINA 5 ML/H → SE DIL.1 (160 MCG/ML): 0,1349 MCG/KG/MIN | SE DIL.2 (80 MCG/ML): 0,0714 MCG/KG/MIN
 
-   OBS: Medicacoes VO/enteral (ex: alprazolam VO) NAO entram em SEDACAO/ANALGESIA — listar em MEDICACOES DE USO CONTINUO.
+   SEDATIVOS/ANALGESICOS POR QUALQUER VIA ENTRAM EM SEDACAO/ANALGESIA: incluir na secao SEDACAO/ANALGESIA os sedativos, hipnoticos, ansioliticos, antipsicoticos usados com fim de sedacao e analgesicos — seja em INFUSAO CONTINUA (IV) OU por VIA ORAL (VO) OU por SONDA (SNE/SNG/GTT) OU IM. Para cada um, INDICAR A VIA e a dose/posologia. Ex: "QUETIAPINA 25 MG VO/SNE A NOITE", "CLONAZEPAM 2,5 MG/ML 10 GOTAS VO A NOITE", "DIPIRONA 1 G IV 6/6H", "TRAMADOL 100 MG IV 8/8H", "MIDAZOLAM 8 ML/H IV CONTINUO (dose calculada)". Continuos IV mantem a dose calculada (mcg/kg/min ou mg/kg/h); VO/SNE/IM mantem dose + posologia + via.
+   So NAO listar em SEDACAO/ANALGESIA medicacoes que claramente NAO tem finalidade sedativa/analgesica. Uma medicacao sedativa por VO/SNE NAO deve ir para MEDICACOES DE USO CONTINUO — vai para SEDACAO/ANALGESIA. Marcar SEDACAO/ANALGESIA: (X) SIM quando houver qualquer sedativo/analgesico por qualquer via.
 
    PROIBIDO usar SIM/NAO nos sub-campos de PROFILAXIAS.
    GASTRICA, TEP/TVP e OUTROS usam formato direto, sem checkbox:
@@ -4219,6 +4220,7 @@ ${structuredBlock ? `========================================
 Estes campos foram extraidos do texto e REVISADOS pelo medico. Use-os como a fonte AUTORITATIVA para montar a secao EXAME CLINICO (e os campos correspondentes: SEDACAO/ANALGESIA, BLOQUEADOR NEUROMUSCULAR, DROGAS VASOATIVAS, DISPOSITIVOS INVASIVOS, PROFILAXIAS, ANTIMICROBIANOS EM USO, NUTRICAO, ALERGIAS, CONTROLES E BALANCO DAS ULTIMAS 24 HORAS, JUSTIFICATIVA DE PERMANENCIA, DEMANDA FAMILIAR).
 Na secao CONTROLES E BALANCO DAS ULTIMAS 24 HORAS, usar os dados de periodo, temperatura/febre, escapes glicemicos, diurese, drenos/sondas/perdas e balanco hidrico exatamente como fornecidos; se o periodo for "24 horas", deixar claro "das 07h as 07h"; escape glicemico e somente glicemia capilar acima de 180.
 REGRAS: reproduzir EXATAMENTE estes valores; converter para o formato/secoes do modelo; NAO contradizer nem inventar campos que aqui estao ausentes (para os ausentes, aplicar a regra [COMPLEMENTAR]). Manter coerencia clinica (Regra 22).
+IMPORTANTE — MEDICACOES POR OUTRAS VIAS: o bloco estruturado traz sobretudo as INFUSOES CONTINUAS. As secoes de medicacoes (SEDACAO/ANALGESIA, ANTIMICROBIANOS, PROFILAXIAS, MEDICACOES DE USO CONTINUO) devem COMBINAR o que vem aqui (infusoes IV continuas) COM as medicacoes por VIA ORAL (VO), SONDA (SNE/SNG/GTT) ou IM citadas nos DADOS BASE / NOVAS INFORMACOES — NAO descartar essas. Em especial, sedativos/hipnoticos/ansioliticos/antipsicoticos-sedativos e analgesicos por VO ou SNE DEVEM aparecer em SEDACAO/ANALGESIA com a VIA indicada (ver regra da secao SEDACAO/ANALGESIA).
 ${structuredBlock}
 ========================================
 ` : ''}========================================
