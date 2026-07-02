@@ -2608,7 +2608,8 @@ REGRAS CLINICAS OBRIGATORIAS:
     DOSS → DOSS (COLECALCIFEROL / VITAMINA D)
     RETEMIC → RETEMIC (CLORIDRATO DE OXIBUTININA)
     TAZOCIN → TAZOCIN (PIPERACILINA + TAZOBACTAM)
-    Se o nome ja for o principio ativo (ex: OMEPRAZOL, ENOXAPARINA, NORADRENALINA), NAO duplicar. Se houver duvida razoavel sobre o principio ativo, marcar "(PRINCIPIO ATIVO - CONFIRMAR)" em vez de inventar.
+    ATENCAO — SO acrescentar o principio ativo quando a medicacao for NOME COMERCIAL/MARCA. Se o nome JA FOR o proprio principio ativo (nome generico), NAO acrescentar NADA entre parenteses. Exemplos de nomes que JA SAO o principio ativo (NAO colocar parenteses): FINASTERIDA, DOXAZOSINA, OMEPRAZOL, PANTOPRAZOL, ENOXAPARINA, NORADRENALINA, LOSARTANA, ANLODIPINO, METFORMINA, LEVOTIROXINA, FUROSEMIDA, ESPIRONOLACTONA, CARVEDILOL, SINVASTATINA, CLOPIDOGREL, DIPIRONA, MIDAZOLAM, FENTANIL, PROPOFOL, VANCOMICINA, MEROPENEM, etc.
+    PROIBIDO usar placeholders como "(PRINCIPIO ATIVO - CONFIRMAR)", "(PRINCIPIO ATIVO)", "(CONFIRMAR)" — NUNCA escrever isso. Se for uma MARCA e voce nao tiver certeza do principio ativo, deixar apenas o nome como esta, SEM parenteses. Placeholder e pior que nada.
     OBRIGATORIO E SEM EXCECAO: aplicar a TODAS as medicacoes por nome comercial, em TODAS as secoes — nao deixar NENHUMA marca sem o principio ativo entre parenteses. Antes de finalizar, RELER a evolucao e conferir cada medicacao: se for marca/nome comercial e estiver SEM "(principio ativo)", acrescentar. Outros exemplos: PURAN T4 (LEVOTIROXINA), GLIFAGE (METFORMINA), AAS (ACIDO ACETILSALICILICO), CLEXANE (ENOXAPARINA), DORMONID (MIDAZOLAM), PRECEDEX (DEXMEDETOMIDINA), DIPRIVAN (PROPOFOL), TYLENOL (PARACETAMOL), NOVALGINA (DIPIRONA), TIENAM (IMIPENEM + CILASTATINA), ROCEFIN (CEFTRIAXONA), AVALOX (MOXIFLOXACINO), VANCOCINA (VANCOMICINA), TRACRIUM (ATRACURIO).
 
 14. EXAMES DE MAIOR IMPORTANCIA - FORMATO: NOME DO EXAME (em destaque/negrito), seguido da DATA quando houver, depois ":" e a DESCRICAO/resultado (a descricao NAO fica em negrito). UM exame por linha, em ORDEM CRONOLOGICA (mais antigo primeiro). INTERCONSULTAS seguem o mesmo: ESPECIALIDADE + DATA: avaliacao/conduta, uma por linha, em ordem cronologica.
@@ -5185,6 +5186,10 @@ function postProcess(text, tipo, pesoInformado) {
   });
 
   let finalText = compact.join('\n');
+
+  // Remover placeholders inúteis de princípio ativo (ex: FINASTERIDA já é o princípio ativo).
+  finalText = finalText.replace(/\s*\(\s*PRINC[IÍ]PIO\s+ATIVO[^)]*\)/gi, '');
+  finalText = finalText.replace(/\s*\(\s*CONFIRMAR\s+PRINC[IÍ]PIO\s+ATIVO[^)]*\)/gi, '');
 
   // ── SAPS III: mortalidade DETERMINÍSTICA (fórmula oficial SAPS 3) + sanidade do escore ──
   // Substitui qualquer "SAPS III: (VALOR MORTALIDADE A.S ...%)" recalculando o % pela fórmula.
