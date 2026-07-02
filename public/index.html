@@ -2665,7 +2665,10 @@ REGRAS CLINICAS OBRIGATORIAS:
 
 19c-SAPS. ESCORE SAPS III (automatizado, calculado na ADMISSAO com dados das primeiras 24h de internacao na UTI):
    - Se o campo "SAPS III" da identificacao JA vier preenchido, USAR exatamente esse valor (formato fixo) e NAO recalcular — o SAPS III e fixo da admissao e nao muda nas evolucoes seguintes.
+   - PREFERENCIA: o SAPS III idealmente vem do SISTEMA DO HOSPITAL. Se o usuario informar o valor, usar esse. So calcular quando NAO houver valor informado E houver TODOS os dados da admissao.
    - Se NAO vier preenchido: REUNIR de TODAS as fontes (ficha de exames, anexos, dados clinicos, novas informacoes) os dados da ADMISSAO necessarios e calcular o SAPS III. O SAPS III usa: IDADE, COMORBIDADES (cancer, cirrose, insuf. cardiaca, SIDA, etc.), MOTIVO/ORIGEM DA INTERNACAO, STATUS CIRURGICO (eletivo/urgencia/clinico), SINAIS VITAIS DA ADMISSAO (PAS, FC, TEMPERATURA, ESCALA DE GLASGOW) e EXAMES DA ADMISSAO (BILIRRUBINA, CREATININA/UREIA, LEUCOCITOS, PLAQUETAS, pH). Apresentar no formato: SAPS III: (<valor> MORTALIDADE A.S <percentual>%).
+   - PLAUSIBILIDADE OBRIGATORIA: o ESCORE SAPS III de pacientes reais fica quase sempre entre 0 e 120 (raramente ate ~130). Se a sua soma de pontos passar de 130, voce provavelmente SOMOU ERRADO — NAO imprima esse numero. Em vez disso, escreva "SAPS III: NAO CALCULAVEL — CONFERIR/INFORMAR O SAPS III DO SISTEMA".
+   - NAO se preocupe em calcular o PERCENTUAL de mortalidade: escreva apenas o formato "SAPS III: (<valor> MORTALIDADE A.S %)" — o sistema calcula o percentual exato automaticamente a partir do escore. Foque em obter o ESCORE correto.
    - NUNCA inventar, estimar nem assumir valores ausentes; NUNCA usar exames de datas posteriores a admissao.
    - Se faltar QUALQUER dado necessario da admissao (clinico OU laboratorial), NAO calcular: PERGUNTAR ao usuario escrevendo EXATAMENTE:
      SAPS III: NAO CALCULAVEL — PARA CALCULAR, INFORME OS SEGUINTES DADOS DA ADMISSAO: [listar SOMENTE os que faltam, ex: IDADE, COMORBIDADES, EXAMES LABORATORIAIS DA ADMISSAO (BILIRRUBINA, CREATININA, LEUCOCITOS, PLAQUETAS, pH), GLASGOW DA ADMISSAO, PAS/FC/TEMPERATURA DA ADMISSAO]
@@ -5181,7 +5184,26 @@ function postProcess(text, tipo, pesoInformado) {
     compact.push(l);
   });
 
-  return compact.join('\n');
+  let finalText = compact.join('\n');
+
+  // ── SAPS III: mortalidade DETERMINÍSTICA (fórmula oficial SAPS 3) + sanidade do escore ──
+  // Substitui qualquer "SAPS III: (VALOR MORTALIDADE A.S ...%)" recalculando o % pela fórmula.
+  // Escore implausível (>150 ou <=0) é sinalizado para conferência (a IA não calcula bem sozinha).
+  finalText = finalText.replace(/SAPS\s*III:\s*\(([^)]*)\)/gi, (full, inner) => {
+    const m = inner.match(/-?\d{1,3}/);
+    if (!m) return full; // sem número (ex: NAO CALCULAVEL) → não mexer
+    const score = parseInt(m[0], 10);
+    if (isNaN(score)) return full;
+    if (score <= 0 || score > 150) {
+      return `SAPS III: (ESCORE ${score} PARECE INCONSISTENTE — CONFERIR OU INFORMAR O SAPS III DO SISTEMA)`;
+    }
+    const logit = -32.6659 + 7.3068 * Math.log(score + 20.5958);
+    const mort = (1 / (1 + Math.exp(-logit))) * 100;
+    const pct = mort.toFixed(2).replace('.', ',');
+    return `SAPS III: (${score} MORTALIDADE A.S ${pct}%)`;
+  });
+
+  return finalText;
 }
 
 function toggleUpdate() {
