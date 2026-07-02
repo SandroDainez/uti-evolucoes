@@ -18,8 +18,7 @@ export default async function handler(req, res) {
 
 Retorne JSON com:
 - "paciente": nome completo do paciente se aparecer no laudo, senão "" (procure por "Paciente:", "Nome:", "Cliente:", etc.)
-- "date": data do exame em DD/MM/AAAA, senão ""
-- "values": objeto chave=nome do exame em MAIUSCULO_COM_UNDERSCORE, valor=número como string (só o número, ponto decimal, sem unidade)
+- "columns": ARRAY com UMA entrada por DATA/COLUNA de resultado presente no laudo. Cada entrada e um objeto {"date": data daquela coluna em DD/MM/AAAA (ou "" se ilegivel), "values": objeto chave=nome do exame em MAIUSCULO_COM_UNDERSCORE, valor=numero como string (so o numero, ponto decimal, sem unidade)}. Ordene as entradas da data MAIS ANTIGA para a MAIS RECENTE.
 
 REGRAS:
 1. Extraia TODOS os exames presentes, mesmo os que não estão na lista de exemplos abaixo. Se houver 40 exames, retorne os 40.
@@ -28,12 +27,12 @@ REGRAS:
 4. Corrija erros óbvios de OCR em números (O→0, l→1, S→5) quando o contexto for claro.
 5. Ignore valores de referência/intervalos de normalidade — capture só o resultado do paciente.
 6. Use ponto decimal. Ex: "9,2" → "9.2".
-7. ⚠️ MUITO IMPORTANTE — APENAS O RESULTADO MAIS RECENTE:
-   Muitos laudos mostram resultados de DIAS ANTERIORES lado a lado para comparação/evolução (várias colunas com datas diferentes para o mesmo exame).
-   Você deve extrair SOMENTE o resultado do exame ATUAL / MAIS RECENTE (a coluna/data mais nova, geralmente a primeira da esquerda ou a marcada como atual).
-   NUNCA misture resultados de datas diferentes. Se um exame tem valores em 05/06 e 08/06, retorne SOMENTE o de 08/06 (o mais recente).
-   Em "date", coloque a data do resultado ATUAL extraído.
-8. Se o laudo tiver uma única coluna de resultado, use essa normalmente.
+7. ⚠️ MUITO IMPORTANTE — LAUDOS COM VARIAS DATAS (cumulativos):
+   Muitos laudos mostram resultados de VARIOS DIAS lado a lado (varias colunas, cada uma com uma DATA no cabecalho).
+   - Identifique a DATA de CADA coluna e retorne UMA entrada em "columns" para CADA data, com os valores CORRETOS daquela coluna.
+   - NUNCA misture valores de datas diferentes na mesma entrada — associe cada numero a data/coluna correta.
+   - A ordem das colunas VARIA: a mais recente pode estar a ESQUERDA ou a DIREITA. Use SEMPRE a DATA impressa em cada coluna para saber a data, NUNCA a posicao.
+8. Se o laudo tiver UMA unica coluna/data, retorne "columns" com UMA entrada.
 
 Nomes canônicos preferenciais (use estes quando aplicável): HEMOGLOBINA, HEMATOCRITO, VCM, HCM, RDW, LEUCOCITOS, NEUTROFILOS, BASTONETES, SEGMENTADOS, EOSINOFILOS, BASOFILOS, MONOCITOS, LINFOCITOS, PLAQUETAS, PH_ART, PO2_ART, PCO2_ART, HCO3_ART, BE_ART, SATO2_ART, LACTATO, TTPA, INR, TAP, FIBRINOGENIO, D_DIMERO, UREIA, CREATININA, SODIO, POTASSIO, CLORO, MAGNESIO, FOSFORO, CALCIO, CALCIO_IONIZADO, TGO, TGP, FOSFATASE_ALCALINA, GGT, BILIRRUBINA_TOTAL, BILIRRUBINA_DIRETA, ALBUMINA, PROTEINAS_TOTAIS, PCR, PROCALCITONINA, FERRITINA, VHS, TROPONINA, BNP, GLICEMIA, CPK, CK_MB, AMILASE, LIPASE, TSH, T4_LIVRE, ACIDO_URICO, HBA1C, DHL.
 
@@ -114,10 +113,22 @@ Retorne APENAS o JSON válido, sem markdown, sem blocos de código, sem explica�
       }
     }
 
+    // Normaliza colunas (uma por data). Compat: se a IA devolver o formato antigo
+    // (date/values direto), converte numa unica coluna.
+    let columns = Array.isArray(parsed.columns)
+      ? parsed.columns.filter(c => c && c.values && Object.keys(c.values).length)
+      : [];
+    if (!columns.length && parsed.values && Object.keys(parsed.values).length) {
+      columns = [{ date: parsed.date || '', values: parsed.values }];
+    }
+    // date/values de compatibilidade = coluna MAIS RECENTE (ultima, ja ordenado antigo->recente)
+    const last = columns.length ? columns[columns.length - 1] : { date: '', values: {} };
+
     return res.status(200).json({
       paciente: parsed.paciente || '',
-      date: parsed.date || '',
-      values: parsed.values || {}
+      date: last.date || '',
+      values: last.values || {},
+      columns,
     });
 
   } catch (error) {

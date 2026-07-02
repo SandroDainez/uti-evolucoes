@@ -7715,69 +7715,12 @@ function fillLabsFromAI(data) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
     return '';
   }
-  // Data desta extração. Se não veio data, reaproveita a última usada na sessão;
-  // se ainda não há nenhuma, usa a data de hoje (usuário pode editar).
-  let isoDate = normIso(date);
-  if (!isoDate) {
-    if (lastExtractDate) isoDate = lastExtractDate;
-    else { const n = new Date(); isoDate = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; }
-  }
-  lastExtractDate = isoDate;
-
   function colTemDados(c) {
     const d = document.getElementById('labDate' + c);
     if (d && d.value) return true;
     const inputs = document.querySelectorAll(`.ficha-value-input[data-col="${c}"]`);
     for (const inp of inputs) { if (inp.value && inp.value.trim()) return true; }
     return false;
-  }
-
-  // ── COLUNA DO LOTE (mesma data = mesma coluna) ──
-  let col = -1;
-  // 1. Se ja existe uma coluna com essa data, usar ela (agrupar mesmo dia)
-  if (isoDate) {
-    for (let i = 0; i < fichaCols; i++) {
-      const d = document.getElementById('labDate' + i);
-      if (d && d.value === isoDate) { col = i; break; }
-    }
-  }
-  // 2. Senao, proxima coluna vazia (ou nova) e marcar a data nela
-  if (col === -1) {
-    for (let i = 0; i < fichaCols; i++) { if (!colTemDados(i)) { col = i; break; } }
-    if (col === -1) {
-      if (typeof addFichaCol === 'function') { addFichaCol(); col = fichaCols - 1; }
-      else col = fichaCols - 1;
-    }
-    if (isoDate) {
-      const dateEl = document.getElementById('labDate' + col);
-      if (dateEl) dateEl.value = isoDate;
-    }
-  }
-
-  // Decide a coluna para um exame especifico: se a celula do lote ja estiver ocupada,
-  // procura outra coluna com a MESMA data e celula vazia, ou cria uma nova com a mesma data.
-  function targetColFor(mappedKey) {
-    const td0 = document.getElementById(`td-${mappedKey}-${col}`);
-    const inp0 = td0 ? td0.querySelector('.ficha-value-input') : null;
-    if (inp0 && !inp0.value.trim()) return col;
-    if (inp0 && inp0.value.trim() && isoDate) {
-      for (let i = 0; i < fichaCols; i++) {
-        const d = document.getElementById('labDate' + i);
-        if (d && d.value === isoDate) {
-          const td = document.getElementById(`td-${mappedKey}-${i}`);
-          const inp = td ? td.querySelector('.ficha-value-input') : null;
-          if (inp && !inp.value.trim()) return i;
-        }
-      }
-      if (typeof addFichaCol === 'function') {
-        addFichaCol();
-        const nc = fichaCols - 1;
-        const d = document.getElementById('labDate' + nc);
-        if (d) d.value = isoDate;
-        return nc;
-      }
-    }
-    return col;
   }
 
   // Alias map: normalize incoming keys to FICHA_ROWS keys
@@ -7813,37 +7756,60 @@ function fillLabsFromAI(data) {
 
   const norm = k => k.replace(/[^A-Z0-9]/g, '_').toUpperCase();
 
-  let mappedCount = 0;
-  const naoMapeados = [];
-
-  Object.entries(values).forEach(([rawKey, rawVal]) => {
-    const nk = norm(rawKey);
-    const mapped = ALIAS[nk] || ALIAS[rawKey.toUpperCase()] || nk;
-    // Verifica se o exame existe na ficha (coluna do lote como referência)
-    if (!document.getElementById(`td-${mapped}-${col}`)) {
-      naoMapeados.push(`${rawKey}: ${rawVal}`);
-      return;
+  // Coloca UMA coluna (uma data) de valores na ficha. Retorna {mapped, nao}.
+  function placeLabColumn(isoDate, vals) {
+    // 1. Se já existe uma coluna com essa data, usar ela (agrupa mesmo dia)
+    let col = -1;
+    if (isoDate) {
+      for (let i = 0; i < fichaCols; i++) { const d = document.getElementById('labDate' + i); if (d && d.value === isoDate) { col = i; break; } }
     }
-    // Coluna correta para este exame (agrupa por data, evita sobrescrever)
-    const tcol = targetColFor(mapped);
-    const tdEl = document.getElementById(`td-${mapped}-${tcol}`);
-    if (!tdEl) { naoMapeados.push(`${rawKey}: ${rawVal}`); return; }
-    const inp = tdEl.querySelector('.ficha-value-input');
-    if (!inp) { naoMapeados.push(`${rawKey}: ${rawVal}`); return; }
-    inp.value = String(rawVal).replace(',', '.');
-    onLabInput(inp);
-    mappedCount++;
+    // 2. Senão, próxima coluna vazia (ou nova) e marcar a data nela
+    if (col === -1) {
+      for (let i = 0; i < fichaCols; i++) { if (!colTemDados(i)) { col = i; break; } }
+      if (col === -1) { if (typeof addFichaCol === 'function') { addFichaCol(); col = fichaCols - 1; } else col = fichaCols - 1; }
+      if (isoDate) { const dateEl = document.getElementById('labDate' + col); if (dateEl) dateEl.value = isoDate; }
+    }
+    // Mesma data = MESMA coluna: escreve (sobrescreve) na célula do exame nessa coluna.
+    // Reprocessar a mesma data (ex: laudo cumulativo re-adicionado) NÃO duplica colunas.
+    let mapped = 0; const nao = [];
+    Object.entries(vals || {}).forEach(([rawKey, rawVal]) => {
+      const nk = norm(rawKey);
+      const mk = ALIAS[nk] || ALIAS[rawKey.toUpperCase()] || nk;
+      const tdEl = document.getElementById(`td-${mk}-${col}`);
+      if (!tdEl) { nao.push(`${rawKey}: ${rawVal}`); return; }
+      const inp = tdEl.querySelector('.ficha-value-input');
+      if (!inp) { nao.push(`${rawKey}: ${rawVal}`); return; }
+      inp.value = String(rawVal).replace(',', '.');
+      onLabInput(inp);
+      mapped++;
+    });
+    return { mapped, nao };
+  }
+
+  // Uma coluna por DATA (laudo cumulativo → várias). Compat: formato antigo (date/values).
+  const cols = (Array.isArray(data.columns) && data.columns.length)
+    ? data.columns.map(c => ({ iso: normIso(c.date), values: c.values || {} }))
+    : [{ iso: normIso(date), values }];
+  let totalMapped = 0; const allNao = [];
+  cols.forEach(c => {
+    let iso = c.iso;
+    // Só cai para "hoje" se for lote de uma única coluna sem data (usuário pode editar).
+    if (!iso && cols.length === 1) { const n = new Date(); iso = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; }
+    const r = placeLabColumn(iso, c.values);
+    totalMapped += r.mapped; allNao.push(...r.nao);
   });
+  const lastIso = cols.length ? cols[cols.length - 1].iso : '';
+  if (lastIso) lastExtractDate = lastIso;
 
   if (typeof saveFichaData === 'function') saveFichaData();
 
-  // Mostrar resumo da extração + valores não mapeados
+  // Resumo da extração
   const info = document.getElementById('labsExtractInfo');
   if (info) {
-    let html = `<strong>${mappedCount}</strong> valor(es) preenchido(s) na ficha.`;
-    if (naoMapeados.length) {
-      html += `<br><span style="color:var(--warn);">⚠️ ${naoMapeados.length} exame(s) extraído(s) sem linha correspondente na ficha (adicione manualmente se necessário):</span><br>`;
-      html += `<span style="color:var(--text2);font-size:11px;">${naoMapeados.join(' · ')}</span>`;
+    let html = `<strong>${totalMapped}</strong> valor(es) preenchido(s) na ficha${cols.length > 1 ? ` em <strong>${cols.length}</strong> data(s)` : ''}.`;
+    if (allNao.length) {
+      html += `<br><span style="color:var(--warn);">⚠️ ${allNao.length} exame(s) sem linha correspondente na ficha (adicione manualmente se necessário):</span><br>`;
+      html += `<span style="color:var(--text2);font-size:11px;">${allNao.join(' · ')}</span>`;
     }
     info.innerHTML = html;
     info.style.display = 'block';
