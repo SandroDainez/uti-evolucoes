@@ -7013,21 +7013,41 @@ let lastPatientLatestLabDate = ''; // data ISO mais recente da ficha do paciente
 
 // Busca a ficha de exames salva do paciente (por nome) e devolve os exames
 // agrupados por data de coleta, prontos para o cálculo automático de SOFA/SAPS III.
+// Lista as fichas das DUAS fontes: este app (local) e o app ficha-exames (remoto).
+async function listFichasAll() {
+  const out = [];
+  try {
+    const r = await fetch('/api/fichas?action=list&cb=' + Date.now(), { cache: 'no-store' });
+    const a = await r.json(); if (Array.isArray(a)) a.forEach(f => out.push({ ...f, _src: 'local' }));
+  } catch {}
+  try {
+    const r = await fetch('/api/fichas-remote?action=list&cb=' + Date.now(), { cache: 'no-store' });
+    const a = await r.json(); if (Array.isArray(a)) a.forEach(f => out.push({ ...f, _src: 'remote' }));
+  } catch {}
+  return out;
+}
+// Carrega uma ficha da fonte correta (local ou ficha-exames).
+async function loadFichaAny(f) {
+  const base = f._src === 'remote' ? '/api/fichas-remote' : '/api/fichas';
+  const r = await fetch(`${base}?action=load&id=${f.id}&cb=${Date.now()}`, { cache: 'no-store' });
+  return r.ok ? r.json() : null;
+}
+
 async function fetchPatientLabs(patNome) {
   lastPatientLatestLabDate = '';
   if (!patNome || !patNome.trim()) return '';
   try {
-    const res = await fetch('/api/fichas?action=list&cb=' + Date.now(), { cache: 'no-store' });
-    const fichas = await res.json();
-    if (!Array.isArray(fichas) || !fichas.length) return '';
+    const fichas = await listFichasAll();
+    if (!fichas.length) return '';
     const alvo = normNome(patNome);
-    // match exato por nome; senão tenta conter o nome
-    let match = fichas.find(f => normNome(f.patNome) === alvo);
-    if (!match) match = fichas.find(f => normNome(f.patNome).includes(alvo) || alvo.includes(normNome(f.patNome)));
-    if (!match) return '';
-    const lr = await fetch(`/api/fichas?action=load&id=${match.id}&cb=${Date.now()}`, { cache: 'no-store' });
-    const ficha = await lr.json();
-    if (!lr.ok) return '';
+    // match exato por nome; senão tenta conter o nome. Entre vários, o MAIS RECENTE.
+    let cands = fichas.filter(f => normNome(f.patNome) === alvo);
+    if (!cands.length) cands = fichas.filter(f => normNome(f.patNome).includes(alvo) || alvo.includes(normNome(f.patNome)));
+    if (!cands.length) return '';
+    cands.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+    const match = cands[0];
+    const ficha = await loadFichaAny(match);
+    if (!ficha) return '';
     const data = ficha.data || {};
     const dates = data.dates || {};
     const values = data.values || {};
