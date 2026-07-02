@@ -2716,6 +2716,10 @@ REGRAS CLINICAS OBRIGATORIAS:
 20. CONDUTAS - em ORDEM DE PRIORIDADE e bem descritas. Incluir APENAS as condutas PRINCIPAIS e as que foram REALMENTE adotadas/decididas no periodo (reposicao volemica, correcao eletrolitica, passagem de cateter central, intubacao, troca/ajuste de antimicrobianos, etc.). NAO gerar lista exaustiva de exames/dosagens possiveis nem condutas genericas — proibido produzir dezenas de itens. Maximo de ~10 condutas, focadas no caso. Sugestoes de exames detalhadas ficam no bloco "EXAMES A CONSIDERAR" das pendencias, nao nas CONDUTAS.
    COERENCIA COM EXAMES: antes de finalizar, CONFERIR a secao EXAMES DE MAIOR IMPORTANCIA. Se o RESULTADO de um exame JA estiver disponivel ali, NAO escrever conduta do tipo "aguardar laudo/resultado" desse exame. Em vez disso, atualizar a conduta para refletir o resultado (ex: se a TC ja tem laudo em EXAMES, a conduta deve abordar a INTERPRETACAO/PROXIMO PASSO conforme o achado, nao "aguardar TC"). So manter "aguardar resultado/laudo" para exames que realmente ainda NAO tem resultado. As condutas devem estar coerentes com TODOS os dados ja disponiveis na evolucao (exames, anexos extraidos, novas informacoes).
 
+   EXAMES ALTERADOS — OBRIGATORIO (regra forte): quando a ficha trouxer o bloco "⚠️ EXAMES ALTERADOS NA COLETA MAIS RECENTE", voce DEVE:
+   1) INCLUIR cada exame alterado relevante em EXAMES DE MAIOR IMPORTANCIA (com valor e data) — NAO omitir nenhuma alteracao importante (anemia, plaquetopenia, disturbio eletrolitico — Na/K/Mg/Ca/P, alteracao de funcao renal ou hepatica, PCR/leucocitose, coagulograma, troponina, etc.).
+   2) PROPOR CONDUTA/SUGESTAO especifica para CADA alteracao relevante, nas CONDUTAS (ou no bloco 💊 SUGESTOES quando o tipo tiver pendencias): corrigir o disturbio (medicacao + dose + via, ex: reposicao de K/Mg/Ca, correcao de disturbio acidobasico), AJUSTAR doses conforme funcao renal (ver 19c-RENAL/KDIGO), INVESTIGAR a causa (ex: anemia → pesquisar sangramento/hemolise; leucocitose/PCR alta → foco infeccioso), REPETIR/MONITORAR o exame, TRANSFUNDIR se indicado, etc. NAO deixar NENHUMA alteracao importante sem conduta correspondente. Nao inventar valores — usar os fornecidos.
+
 21. DEMANDA FAMILIAR - sempre "FAMILIARES CIENTES DA GRAVIDADE DO CASO E DAS CONDUTAS ADOTADAS, SEM QUESTIONAMENTOS NO MOMENTO." a nao ser que o usuario forneca outras informacoes.
 
 ===========================================================
@@ -5257,7 +5261,7 @@ const LAB_REFS = {
   'EOSINOFILOS': { min: 1,    max: 5,    critMin: null, critMax: null },
   'BASOFILOS':   { min: 0,    max: 1,    critMin: null, critMax: null },
   'LINFOCITOS':  { min: 20,   max: 40,   critMin: null, critMax: null },
-  'PLAQUETAS':   { min: 150,  max: 400,  critMin: 50,  critMax: null },
+  'PLAQUETAS':   { min: 150000, max: 450000, critMin: 50000, critMax: null },
   'PCR':         { min: 0,    max: 5,    critMin: null, critMax: null },
   'FERRITINA':   { min: 12,   max: 300,  critMin: null, critMax: null },
   'D_DIMERO':    { min: null, max: 500,  critMin: null, critMax: null },
@@ -7166,6 +7170,31 @@ async function fetchPatientLabs(patNome) {
         else if (razao >= 1.5 || (atual.val - basal.val) >= 0.3) estagio = 1;
         const estTxt = estagio ? `ESTAGIO ${estagio}` : 'sem criterio de creatinina para LRA (razao <1,5x e aumento <0,3)';
         out += `\n[CALCULO AUTOMATICO — CRITERIO CREATININA DO KDIGO]: creatinina basal ${basal.val} (${fmt(basal.date)}) → atual ${atual.val} (${fmt(atual.date)}) = razao ${razao.toFixed(2)}x → criterio creatinina KDIGO: ${estTxt}. IMPORTANTE: combine este resultado com o CRITERIO DE DEBITO URINARIO (diurese) e use SEMPRE o MAIOR (pior) estagio entre os dois. NAO recalcular a razao — usar este valor.`;
+      }
+    }
+    // ── EXAMES ALTERADOS (determinístico) da coleta MAIS RECENTE, pelas faixas de referência ──
+    let recentCol = null, recentDate = '';
+    Object.entries(dates).forEach(([c, d]) => { if (d && d > recentDate) { recentDate = d; recentCol = String(c); } });
+    if (recentCol == null) {
+      const cs = Object.keys(cols);
+      if (cs.length) recentCol = cs.sort((a, b) => parseInt(b) - parseInt(a))[0];
+    }
+    if (recentCol != null && typeof LAB_REFS !== 'undefined') {
+      const alterados = [];
+      Object.entries(values).forEach(([k, v]) => {
+        const i = k.lastIndexOf('_'); const test = k.slice(0, i), col = k.slice(i + 1);
+        if (col !== String(recentCol)) return;
+        const ref = LAB_REFS[test]; if (!ref) return;
+        const num = parseFloat(String(v).replace(',', '.')); if (isNaN(num)) return;
+        let flag = '';
+        if (ref.critMax != null && num >= ref.critMax) flag = 'CRÍTICO ALTO';
+        else if (ref.critMin != null && num <= ref.critMin) flag = 'CRÍTICO BAIXO';
+        else if (ref.max != null && num > ref.max) flag = 'ALTO';
+        else if (ref.min != null && num < ref.min) flag = 'BAIXO';
+        if (flag) alterados.push(`${lbl[test] || test} ${v} (${flag}; ref ${ref.min}-${ref.max})`);
+      });
+      if (alterados.length) {
+        out += `\n\n⚠️ EXAMES ALTERADOS NA COLETA MAIS RECENTE (${fmt(recentDate)}): ${alterados.join(' | ')}.\nESTES exames alterados DEVEM aparecer em EXAMES DE MAIOR IMPORTANCIA e ter CONDUTA/SUGESTAO correspondente (corrigir, investigar, ajustar dose, repetir/monitorar, transfundir, etc.).`;
       }
     }
     return out.trim();
