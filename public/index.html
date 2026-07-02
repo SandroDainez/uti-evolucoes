@@ -7310,21 +7310,62 @@ async function renderFichasInline() {
   list.innerHTML = html;
 }
 
-// Importa uma ficha do app ficha-exames: carrega os exames na tabela e SALVA neste app.
+// Compacta a ficha: mantém só as colunas com data/valor, ordenadas por data (mais antiga → mais nova),
+// reindexadas 0,1,2... — remove colunas vazias/gaps e evita duplicação.
+function compactFichaData(data) {
+  const dates = data.dates || {}, values = data.values || {};
+  const used = new Set();
+  Object.keys(dates).forEach(c => { if (dates[c]) used.add(String(c)); });
+  Object.keys(values).forEach(k => { const i = k.lastIndexOf('_'); if (String(values[k]).trim() !== '') used.add(k.slice(i + 1)); });
+  const cols = [...used].sort((a, b) => {
+    const da = dates[a] || '', db = dates[b] || '';
+    if (da && db) return da.localeCompare(db);
+    if (da) return -1; if (db) return 1;
+    return parseInt(a) - parseInt(b);
+  });
+  const newDates = {}, newValues = {};
+  cols.forEach((oldC, newC) => {
+    if (dates[oldC]) newDates[newC] = dates[oldC];
+    Object.keys(values).forEach(k => {
+      const i = k.lastIndexOf('_');
+      if (k.slice(i + 1) === String(oldC) && String(values[k]).trim() !== '') newValues[`${k.slice(0, i)}_${newC}`] = values[k];
+    });
+  });
+  const out = { ...data, dates: newDates, values: newValues, _cols: Math.max(7, cols.length) };
+  return out;
+}
+
+// Importa uma ficha do app ficha-exames: salva os exames DIRETO neste app (compactado, sem merge) e abre.
 async function importFichaRemote(id, nome) {
   try {
     showToast('Importando ficha do ficha-exames...', 'success');
     const r = await fetch(`/api/fichas-remote?action=load&id=${id}&cb=${Date.now()}`, { cache: 'no-store' });
     const ficha = await r.json();
     if (!r.ok || !ficha) throw new Error((ficha && ficha.error) || 'não foi possível carregar');
-    // abrir como ficha nova neste app e aplicar os dados importados
-    currentFichaId = null;
-    currentFichaName = ficha.patNome || nome || '';
-    const nomeEl = document.getElementById('fichaPatNome'); if (nomeEl) nomeEl.value = ficha.patNome || nome || '';
-    applyFichaData(ficha.data || {});
-    // salvar neste app (persiste; se já houver ficha local do mesmo nome, o save mescla)
-    if (typeof saveFichaToServer === 'function') await saveFichaToServer();
-    showToast(`✅ Exames de ${ficha.patNome || nome} importados e salvos neste app.`, 'success');
+    const pat = ficha.patNome || nome || '';
+    const cleanData = compactFichaData(ficha.data || {});
+    cleanData.fichaPatNome = pat;
+    // Se já existe ficha LOCAL do mesmo nome, sobrescreve (não duplica).
+    let existingId = null;
+    try {
+      const loc = await (await fetch('/api/fichas?action=list&cb=' + Date.now(), { cache: 'no-store' })).json();
+      const m = Array.isArray(loc) && loc.find(f => normNome(f.patNome) === normNome(pat));
+      if (m) existingId = m.id;
+    } catch {}
+    const body = { action: 'save', patNome: pat, leito: ficha.leito || '', data: cleanData };
+    if (existingId) body.id = existingId;
+    const saveRes = await fetch('/api/fichas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const result = await saveRes.json();
+    if (!saveRes.ok) throw new Error(result.error || 'erro ao salvar');
+    // Abrir a ficha recém-salva numa tabela limpa
+    currentFichaId = result.id; currentFichaName = pat;
+    const nomeEl = document.getElementById('fichaPatNome'); if (nomeEl) nomeEl.value = pat;
+    fichaCols = cleanData._cols || 7;
+    if (typeof buildFichaTable === 'function') buildFichaTable(false);
+    applyFichaData(cleanData);
+    if (typeof updateFichaBar === 'function') updateFichaBar();
+    const nd = Object.keys(cleanData.dates || {}).length;
+    showToast(`✅ Exames de ${pat} importados (${nd} data${nd === 1 ? '' : 's'}).`, 'success');
     if (typeof renderFichasInline === 'function') renderFichasInline();
   } catch (e) {
     showToast('Erro ao importar: ' + e.message, 'error');
