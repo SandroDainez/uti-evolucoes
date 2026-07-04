@@ -7000,14 +7000,13 @@ function migrateFichaData(data) {
 }
 
 function applyFichaData(data) {
-  data = migrateFichaData(data);
+  // Compacta (remove colunas vazias) e ORDENA por data — datas em sequência, sem buracos.
+  data = compactFichaData(migrateFichaData(data));
   sofaHistory = Array.isArray(data.sofaHistory) ? data.sofaHistory.slice() : [];
   renderSofaHist();
-  // Restaurar número de colunas se salvo
-  if (data._cols && data._cols > fichaCols) {
-    fichaCols = data._cols;
-    buildFichaTable(false); // reconstruir com o número correto
-  }
+  // Reconstruir a tabela com o número EXATO de colunas (sequenciais).
+  fichaCols = Math.max(7, data._cols || 7);
+  buildFichaTable(false);
   // Datas
   Object.entries(data.dates || {}).forEach(([i, v]) => {
     const el = document.getElementById('labDate' + i);
@@ -8033,6 +8032,9 @@ function fillLabsFromAI(data) {
   });
   const lastIso = cols.length ? cols[cols.length - 1].iso : '';
   if (lastIso) lastExtractDate = lastIso;
+
+  // Reorganizar em SEQUÊNCIA por data (sem buracos) após a extração
+  applyFichaData(getFichaData());
 
   if (typeof saveFichaData === 'function') saveFichaData();
 
