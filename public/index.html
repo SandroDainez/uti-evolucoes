@@ -2381,6 +2381,17 @@ REGRA NUMERO 1c — ESCOPO DA ADMISSAO (nao misturar setores):
 - A evolucao de ADMISSAO e a admissao do paciente NA UTI. A historia (HISTORIA DA DOENCA ATUAL / ADMISSAO UTI) descreve o quadro ATE a internacao na UTI (motivo da internacao, evolucao previa relevante, de onde veio: PS, enfermaria, centro cirurgico). O EXAME CLINICO e o exame NA ADMISSAO a UTI.
 - NAO misturar anotacoes de evolucao de ENFERMARIA / outro setor com a admissao da UTI. Usar SOMENTE os dados fornecidos, organizando-os no contexto da admissao a UTI. Nao transformar dados de admissao em evolucao de enfermaria nem o contrario.
 
+REGRA NUMERO 1d — HISTORIA DA DOENCA ATUAL vs ADMISSAO UTI (nao confundir):
+- HISTORIA DA DOENCA ATUAL (HDA): e a NARRATIVA do quadro ATUAL — inicio e evolucao dos sintomas, o que aconteceu, exames/condutas previos, ate a chegada na UTI. AQUI vai a MAIOR PARTE da historia. Se o usuario descreveu a historia do paciente, ela vai PREDOMINANTEMENTE em HDA.
+- ADMISSAO UTI: e SO a circunstancia da ENTRADA na UTI (de onde veio + indicacao da internacao na UTI + estado a chegada). Curto. NAO colocar a historia inteira aqui.
+- ERRO COMUM A EVITAR: jogar toda a historia clinica em ADMISSAO UTI. Se a informacao descreve a doenca/evolucao, vai em HDA; so o evento de admissao a UTI vai em ADMISSAO UTI.
+
+REGRA NUMERO 1e — COMPLETUDE (nao deixar informacao de fora):
+- INCORPORAR TODA a informacao clinica fornecida — dos DADOS BASE, das NOVAS INFORMACOES e dos ANEXOS (texto por OCR) — na secao CORRETA da evolucao. NAO descartar nenhum dado informado pelo usuario.
+- Se um dado clinico nao se encaixa claramente numa secao especifica, coloca-lo em OUTRAS INFORMACOES RELEVANTES ou na HISTORIA DA DOENCA ATUAL — NUNCA simplesmente omitir.
+- ANEXOS: extrair TUDO que for util do texto dos anexos (nome do paciente, historia, antecedentes, medicacoes, exames, laudos, achados) e distribuir nas secoes corretas. Se o campo NOME estiver vazio e o nome aparecer no anexo, usar esse nome. Corrigir erros obvios de OCR, sem inventar.
+- Antes de finalizar, CONFERIR: todo dado relevante que o usuario forneceu (texto e anexos) esta refletido em ALGUMA secao? Se ficou algo de fora, incluir.
+
 ===========================================================
 ESTRUTURA MINIMA E COMPLEMENTACAO (REGRA GERAL):
 ===========================================================
@@ -2869,7 +2880,9 @@ ${pesoLinha}
 HIPOTESES DIAGNOSTICAS:
 [cada hipotese em sua propria linha, com o CID-10 entre parenteses ao final de TODAS, ex: "(CID A41.9)"]
 HISTORIA DA DOENCA ATUAL:
+[narrativa CRONOLOGICA do quadro ATUAL: inicio e evolucao dos sintomas, o que motivou a procura/internacao, exames e condutas relevantes ate a chegada na UTI. AQUI vai a MAIOR PARTE da historia clinica. Incorporar TODO o contexto fornecido (dados base, novas informacoes e anexos) que descreva a doenca atual — nao deixar de fora.]
 ADMISSAO UTI:
+[APENAS a circunstancia da entrada NA UTI: DE ONDE veio (pronto-socorro, enfermaria, centro cirurgico, outro hospital), a INDICACAO da internacao na UTI (ex: insuficiencia respiratoria, choque, pos-operatorio de alto risco, rebaixamento do nivel de consciencia, monitorizacao) e o estado a CHEGADA na UTI. Curto e focado no EVENTO de admissao a UTI — NAO repetir toda a historia (essa vai em HISTORIA DA DOENCA ATUAL).]
 ANTECEDENTES PATOLOGICOS E CIRURGICOS:
 [cada antecedente em sua propria linha, com o CID-10 entre parenteses ao final, ex: "HAS (CID I10)"]
 MEDICACOES DE USO CONTINUO:
@@ -2918,7 +2931,9 @@ ${pesoLinha}
 HIPOTESES DIAGNOSTICAS:
 [cada hipotese em sua propria linha, com o CID-10 entre parenteses ao final de TODAS, ex: "(CID A41.9)"]
 HISTORIA DA DOENCA ATUAL:
+[narrativa CRONOLOGICA do quadro ATUAL: inicio e evolucao dos sintomas, o que motivou a procura/internacao, exames e condutas relevantes ate a chegada na UTI. AQUI vai a MAIOR PARTE da historia clinica. Incorporar TODO o contexto fornecido (dados base, novas informacoes e anexos) que descreva a doenca atual — nao deixar de fora.]
 ADMISSAO UTI:
+[APENAS a circunstancia da entrada NA UTI: DE ONDE veio (pronto-socorro, enfermaria, centro cirurgico, outro hospital), a INDICACAO da internacao na UTI (ex: insuficiencia respiratoria, choque, pos-operatorio de alto risco, rebaixamento do nivel de consciencia, monitorizacao) e o estado a CHEGADA na UTI. Curto e focado no EVENTO de admissao a UTI — NAO repetir toda a historia (essa vai em HISTORIA DA DOENCA ATUAL).]
 ANTECEDENTES PATOLOGICOS E CIRURGICOS:
 [cada antecedente em sua propria linha, com o CID-10 entre parenteses ao final, ex: "HAS (CID I10)"]
 MEDICACOES DE USO CONTINUO:
