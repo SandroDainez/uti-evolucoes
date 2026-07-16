@@ -4131,7 +4131,10 @@ async function generateEvolution() {
     }
     const data = await res.json();
     _exameParsed = data.exame || {};
-    // pré-preencher peso e altura do exame nos campos, se vazios
+    // pré-preencher nome, peso e altura do exame nos campos, se vazios
+    if (_exameParsed.nome && !document.getElementById('patNome').value.trim()){
+      document.getElementById('patNome').value = _exameParsed.nome;
+    }
     if (_exameParsed.peso && !document.getElementById('patientWeight').value.trim()){
       document.getElementById('patientWeight').value = _exameParsed.peso;
     }
@@ -4210,7 +4213,7 @@ PESO: ${weight || 'NAO INFORMADO'} KG
 ALTURA: ${altura ? altura + ' CM' : 'NAO INFORMADA'}
 
 IDENTIFICACAO DO PACIENTE (usar exatamente como fornecido):
-NOME: ${patNome || '[NAO INFORMADO]'}
+NOME: ${patNome || '[NAO PREENCHIDO NO CAMPO — EXTRAIR o nome do paciente dos DADOS BASE / NOVAS INFORMACOES / ANEXOS abaixo (ex: "paciente", "Sr./Sra.", cabecalho de laudo "Paciente:"). So usar [COMPLEMENTAR: informar nome do paciente] se realmente NAO houver nome em lugar nenhum.]'}
 LEITO: ${patLeito || '[NAO INFORMADO]'}
 CONVENIO: ${patConvenio || '[NAO INFORMADO]'}
 ADMISSAO HOSPITALAR: ${fmtDate(patAdmHosp) || '[NAO INFORMADA]'}

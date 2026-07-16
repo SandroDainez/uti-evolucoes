@@ -72,6 +72,7 @@ PROFILAXIAS / MEDICACOES:
 - "dispositivos": array de strings (ex: ["CVC jugular D","TOT","SVD","PAI"]), senao []
 
 ESCORES / IDENTIFICACAO:
+- "nome": nome COMPLETO do paciente, se aparecer no texto ou nos anexos (procure por "paciente", "nome", "Sr.", "Sra.", cabecalho de laudo "Paciente:", etc.). Reproduzir exatamente, sem inventar. Senao null.
 - "saps3": numero, "peso": numero (kg), "altura": numero (cm — altura/estatura do paciente), "alergias": string, senao null
 
 CONTEXTO:
