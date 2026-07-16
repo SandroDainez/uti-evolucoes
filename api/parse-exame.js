@@ -72,7 +72,7 @@ PROFILAXIAS / MEDICACOES:
 - "dispositivos": array de strings (ex: ["CVC jugular D","TOT","SVD","PAI"]), senao []
 
 ESCORES / IDENTIFICACAO:
-- "saps3": numero, "peso": numero (kg), "alergias": string, senao null
+- "saps3": numero, "peso": numero (kg), "altura": numero (cm — altura/estatura do paciente), "alergias": string, senao null
 
 CONTEXTO:
 - "justificativa_uti": justificativa curta de permanencia em UTI baseada nos dados (VM, DVA, instabilidade...), senao null

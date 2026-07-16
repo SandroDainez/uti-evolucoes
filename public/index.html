@@ -1373,7 +1373,9 @@
             <div class="weight-field">
               <span>Peso (kg):</span>
               <input type="number" class="weight-input" id="patientWeight" placeholder="70" min="1" max="300">
-              <span style="color:var(--text3);font-size:11px;">para cálculo de doses</span>
+              <span style="color:var(--text3);font-size:11px;">p/ cálculo de doses</span>
+              <span style="margin-left:10px;">Altura (cm):</span>
+              <input type="number" class="weight-input" id="patAltura" placeholder="170" min="30" max="250">
             </div>
             <div style="display:flex;gap:8px;">
               <button class="btn-logout" onclick="clearAll()" title="Limpar todos os campos para nova evolução" style="padding:0 16px;height:40px;border-radius:10px;">
@@ -2321,10 +2323,13 @@ function buildSystemPrompt(type, weight) {
     ? `Peso do paciente: ${w} kg (informado pelo usuario — NAO escrever "SOLICITAR PESO REAL" nem "REFERENCIA").`
     : `Peso nao informado (usando 70kg como referencia para exemplos). Solicitar peso real ao usuario.`;
 
+  // Altura informada pelo usuario (campo patAltura), se houver
+  const alturaVal = (typeof document !== 'undefined' && document.getElementById('patAltura')?.value || '').toString().trim();
+  const alturaTxt = alturaVal ? `${alturaVal} CM` : 'NAO INFORMADA CM';
   // Linha de PESO/ALTURA: so mostra "(REFERENCIA - SOLICITAR PESO REAL)" quando o peso NAO foi informado
   const pesoLinha = weight
-    ? `PESO: ${w} KG    ALTURA: NAO INFORMADA CM`
-    : `PESO: 70 KG (REFERENCIA - SOLICITAR PESO REAL)    ALTURA: NAO INFORMADA CM`;
+    ? `PESO: ${w} KG    ALTURA: ${alturaTxt}`
+    : `PESO: 70 KG (REFERENCIA - SOLICITAR PESO REAL)    ALTURA: ${alturaTxt}`;
 
   return `Voce e um assistente medico de alta precisao especializado em UTI Geral I e II. Sua missao e transformar textos livres em evolucoes estruturadas, garantindo PORTUGUES CORRETO (gramatica, ortografia, concordancia, pontuacao e ACENTUACAO CORRETA mesmo em MAIUSCULAS), construcao de frases adequada ao contexto clinico, terminologia medica adequada e fidelidade absoluta aos dados, sem NUNCA inventar informacoes.
 
@@ -3859,6 +3864,7 @@ function renderExameForm(p){
     <div class="ex-sec-head">📊 Escores / Identificação</div>
     <div class="ex-grid">
       ${exNum('peso','Peso',p.peso,'kg')}
+      ${exNum('altura','Altura',p.altura,'cm')}
       ${exNum('saps3','SAPS III',p.saps3,'pontos')}
     </div>
     <div class="ex-grid one" style="padding-top:0;">
@@ -3899,7 +3905,7 @@ function collectExame(){
   const g = id => { if (skipped(id)) return ''; const el = document.getElementById('ex_'+id); return el ? String(el.value).trim() : ''; };
   const o = {};
   ['ncons','pup','cam','padr','mv','adv','vmodo','ritmo','aust','perf','edema','abd','rha','diet','urina','pele','lpp',
-   'gcs','fio2','peep','vc','ppico','fr','spo2','fc','pas','pad','tax','du','saps3','peso',
+   'gcs','fio2','peep','vc','ppico','fr','spo2','fc','pas','pad','tax','du','saps3','peso','altura',
    'rass','alergias','justificativa_uti',
    'bal_periodo','bal_ini','bal_fim','febre','escapes','diurese_vol','perdas','bh_sinal','bh_vol'
   ].forEach(k => { const v = g(k); if (v) o[k] = v; });
@@ -4125,9 +4131,12 @@ async function generateEvolution() {
     }
     const data = await res.json();
     _exameParsed = data.exame || {};
-    // pré-preencher peso do exame no campo de peso, se vazio
+    // pré-preencher peso e altura do exame nos campos, se vazios
     if (_exameParsed.peso && !document.getElementById('patientWeight').value.trim()){
       document.getElementById('patientWeight').value = _exameParsed.peso;
+    }
+    if (_exameParsed.altura && !document.getElementById('patAltura')?.value.trim()){
+      const aEl = document.getElementById('patAltura'); if (aEl) aEl.value = _exameParsed.altura;
     }
     renderExameForm(_exameParsed);
     document.getElementById('examePanel').style.display = 'block';
@@ -4159,6 +4168,9 @@ function confirmAndGenerate(){
   }
   _exWarnShown = false;
   exShowWarnings([]);
+  // sincronizar peso/altura do formulário para os campos usados na geração
+  if (o.peso && !document.getElementById('patientWeight').value.trim()) document.getElementById('patientWeight').value = o.peso;
+  if (o.altura){ const a = document.getElementById('patAltura'); if (a && !a.value.trim()) a.value = o.altura; }
   const block = exameToBlock(o);
   document.getElementById('examePanel').style.display = 'none';
   return _doGenerate(block);
@@ -4191,9 +4203,11 @@ async function _doGenerate(structuredBlock) {
   // Buscar a ficha de exames salva do paciente (fonte oficial p/ SOFA e SAPS III)
   const patLabs = await fetchPatientLabs(patNome);
 
+  const altura = document.getElementById('patAltura')?.value.trim() || '';
   const systemPrompt = buildSystemPrompt(currentType, weight);
   const userMsg = `TIPO: ${currentType.toUpperCase()}
 PESO: ${weight || 'NAO INFORMADO'} KG
+ALTURA: ${altura ? altura + ' CM' : 'NAO INFORMADA'}
 
 IDENTIFICACAO DO PACIENTE (usar exatamente como fornecido):
 NOME: ${patNome || '[NAO INFORMADO]'}
@@ -4973,6 +4987,7 @@ function resetEvolucaoFields() {
   document.getElementById('clinicalInput').value = '';
   document.getElementById('newInfoInput').value = '';
   document.getElementById('patientWeight').value = '';
+  const _altEl = document.getElementById('patAltura'); if (_altEl) _altEl.value = '';
 
   // Limpar rascunhos do tipo atual
   if (currentType) {
@@ -6232,6 +6247,7 @@ async function saveEvolucao() {
     admUTI:   document.getElementById('patAdmUTI').value,
     saps:     document.getElementById('patSaps').value.trim(),
     weight:   document.getElementById('patientWeight').value.trim(),
+    altura:   document.getElementById('patAltura')?.value.trim() || '',
     setor,
   };
 
@@ -6315,6 +6331,7 @@ async function autofillFromPatient() {
         setIfEmpty('patAdmUTI', last.ident.admUTI);
         setIfEmpty('patSaps', last.ident.saps);
         setIfEmpty('patientWeight', last.ident.weight);
+        setIfEmpty('patAltura', last.ident.altura);
         if (last.ident.setor) { const se = document.getElementById('patSetor'); if (se && !se.value) { se.value = last.ident.setor; count++; } }
         if (count > c0) sources.push('evolução anterior');
       }
