@@ -3035,7 +3035,7 @@ OUTRAS INFORMACOES RELEVANTES:
 NUTRICAO:
 INTERCORRENCIAS:
 CONDUTAS:` : ''}
-(MODELO NOTURNO: NAO incluir a secao CONTROLES E BALANCO DAS ULTIMAS 24 HORAS — ela so existe em ADMISSAO e DIURNO.)
+(MODELO NOTURNO: e a evolucao MAIS SIMPLES e COMPACTA. NAO incluir CONTROLES E BALANCO DAS ULTIMAS 24 HORAS (nem balanco hidrico, nem diurese/controles), NAO incluir HISTORIA DA DOENCA ATUAL, ADMISSAO UTI, ANTECEDENTES, MEDICACOES DE USO CONTINUO, DISPOSITIVOS INVASIVOS, EXAMES DE MAIOR IMPORTANCIA, INTERCONSULTAS, DEMANDA FAMILIAR nem JUSTIFICATIVA DE PERMANENCIA — o noturno so tem as secoes listadas acima. CONTROLES E BALANCO so existe no DIURNO.)
 
 ${type === 'diarista' ? `MODELO DIARISTA - REGRAS ESPECIFICAS:
 
@@ -3201,19 +3201,19 @@ const EX_OPTS = {
   pup: ["Isocóricas e fotorreagentes","Isocóricas, fotorreagentes lentas","Anisocoria","Midríase bilateral arreativa","Miose bilateral","Não avaliável"],
   cam: ["Positivo","Negativo","Não avaliável"],
   padr: ["Eupneico, sem esforço","Taquipneico, sem esforço aumentado","Taquipneico com esforço ventilatório","Uso de musculatura acessória","Tiragem intercostal/supraesternal","Respiração paradoxal","Bradipneico","Em VM — modo controlado","Em VM — modo espontâneo assistido","Em ventilação espontânea"],
-  mv: ["Presente e simétrico","Reduzido globalmente","Reduzido em bases","Reduzido em base direita","Reduzido em base esquerda","Reduzido à direita","Reduzido à esquerda","Reduzido bilateralmente","Ausente à direita","Ausente à esquerda","Abolido bilateralmente"],
-  adv: ["Ausentes (limpo)","Crepitações em base direita","Crepitações em base esquerda","Crepitações bibasais","Crepitações difusas","Estertores grossos difusos","Sibilos difusos expiratórios","Sibilos localizados","Roncos difusos","Roncos esparsos","Atrito pleural","Estridor"],
+  mv: ["Presente e simétrico","Reduzido globalmente","Reduzido em bases","Reduzido em base direita","Reduzido em base esquerda","Reduzido em ápice direito","Reduzido em ápice esquerdo","Reduzido à direita","Reduzido à esquerda","Reduzido bilateralmente","Ausente à direita","Ausente à esquerda","Abolido bilateralmente"],
+  adv: ["Ausentes (limpo)","Crepitações em base direita","Crepitações em base esquerda","Crepitações bibasais","Crepitações difusas","Estertores finos bibasais","Estertores grossos difusos","Estertores crepitantes difusos","Sibilos difusos expiratórios","Sibilos inspiratórios e expiratórios","Sibilos localizados","Roncos difusos","Roncos esparsos","Sibilos e roncos difusos","Sopro tubário","Atrito pleural","Estridor"],
   o2: ["Ar ambiente","Cateter nasal","Máscara de Venturi","Máscara não reinalante","Máscara de nebulização","CNAF (alto fluxo)","VNI (CPAP/BiPAP)","Traqueostomia (O2 suplementar)","VM invasiva","Traqueostomia em VM"],
   vmodo: ["VCV","PCV","PSV","SIMV","PAV","APRV"],
   ritmo: ["Ritmo sinusal regular","Taquicardia sinusal","Bradicardia sinusal","Fibrilação atrial (irregularmente irregular)","Flutter atrial","Extrassistolia frequente","Ritmo de marca-passo","Taquicardia supraventricular","Ritmo idioventricular"],
   aust: ["Bulhas rítmicas normofonéticas, sem sopros","Bulhas rítmicas, sopro sistólico","Bulhas rítmicas, sopro diastólico","Bulhas arrítmicas, sem sopros","Bulhas arrítmicas com sopro","Bulhas hipofonéticas","Bulhas hiperfonéticas","Presença de B3/B4","Atrito pericárdico"],
   perf: ["TEC <3s, extremidades aquecidas","TEC 3–5s, extremidades frias","TEC >5s, livedo reticular","Extremidades cianóticas e frias","Extremidades quentes e bem perfundidas"],
   edema: ["Ausente","+1 (tornozelos)","+2 (terço inferior das pernas)","+3 (joelhos)","+4 (coxas)","Anasarca","Edema localizado/assimétrico"],
-  abd: ["Plano, flácido, indolor","Globoso, flácido, indolor","Distendido, timpânico","Distendido, doloroso","Doloroso à palpação difusa","Doloroso localizado","Defesa abdominal","Rigidez em tábua (peritonismo)","Ascítico","Não avaliável (sedado)"],
-  rha: ["Presentes e normais","Aumentados","Reduzidos","Ausentes"],
+  abd: ["Plano, flácido, indolor","Globoso, flácido, indolor","Distendido, timpânico, indolor","Distendido, timpânico","Distendido, doloroso","Doloroso à palpação difusa","Doloroso localizado","Doloroso em hipocôndrio direito","Doloroso em epigástrio","Doloroso em fossa ilíaca direita","Doloroso em fossa ilíaca esquerda","Descompressão brusca dolorosa (Blumberg +)","Defesa abdominal","Rigidez em tábua (peritonismo)","Visceromegalia (hepato/esplenomegalia)","Massa palpável","Ferida operatória limpa e seca","Ostomia funcionante","Ascítico","Não avaliável (sedado)"],
+  rha: ["Presentes e normais","Aumentados","Reduzidos","Ausentes","Metálicos (suboclusão/obstrução)"],
   diet: ["Dieta oral aceita bem","Dieta oral branda/pastosa","Dieta zero (jejum para procedimento)","NPO — jejum indicado","SNE em nutrição enteral","Nutrição enteral por GTT","Nutrição parenteral total","Nutrição enteral + parenteral"],
-  urina: ["Amarelo-clara (normal)","Concentrada (âmbar)","Oligúria (<0,5 mL/kg/h)","Hematúria macroscópica","Em TRS"],
-  pele: ["Normocorada, hidratada, anictérica","Pálida, hidratada, anictérica","Ictérica (+2/4)","Ictérica (+3/4 ou +4/4)","Cianótica periférica","Maculopapular (rash)","Petéquias / equimoses"],
+  urina: ["Amarelo-clara (normal)","Concentrada (âmbar)","Turva / piúria","Colúria","Oligúria (<0,5 mL/kg/h)","Anúria","Poliúria","Hematúria macroscópica","Em TRS"],
+  pele: ["Normocorada, hidratada, anictérica","Pálida, hidratada, anictérica","Sudoreica","Desidratada (turgor diminuído)","Ictérica (+2/4)","Ictérica (+3/4 ou +4/4)","Cianótica periférica","Livedo reticular","Hiperemia / eritema","Lesões cutâneas / feridas","Maculopapular (rash)","Petéquias / equimoses"],
   lpp: ["Ausente","Estágio I (hiperemia reativa)","Estágio II (perda da derme)","Estágio III (tecido subcutâneo)","Estágio IV (músculo/osso)"],
   bnm: ["Sem bloqueador neuromuscular","Cisatracurio","Rocuronio","Atracurio"],
 };
@@ -3327,10 +3327,22 @@ function exMark(el, key){
 // campo SELECT com opções pré-definidas (+ legenda opcional)
 function exSel(key, label, opts, val, help){
   const filled = exHas(val);
+  const isPreset = val && opts.includes(val);
+  const showOutro = (filled && !isPreset); // valor extraído/achado que não está na lista → "Outros"
   let o = `<option value="">— selecionar —</option>`;
   opts.forEach(opt => { o += `<option value="${exEsc(opt)}"${opt===val?' selected':''}>${exEsc(opt)}</option>`; });
+  o += `<option value="__outro__"${showOutro?' selected':''}>Outros (especificar)…</option>`;
   const helpHtml = help ? `<div class="ex-help">${exEsc(help)}</div>` : '';
-  return `<div class="ex-field" id="exf_${key}">${exLabelRow(key,label,filled,true)}<select id="ex_${key}" class="ex-sel ${filled?'ok':'miss'}" onchange="exMark(this,'${key}')">${o}</select>${helpHtml}</div>`;
+  return `<div class="ex-field" id="exf_${key}">${exLabelRow(key,label,filled,true)}
+    <select id="ex_${key}" class="ex-sel ${filled?'ok':'miss'}" onchange="exSelChange('${key}')">${o}</select>
+    <input id="ex_${key}_outro" type="text" class="ex-inp" style="margin-top:6px;display:${showOutro?'block':'none'}" placeholder="Descreva o achado…" value="${showOutro?exEsc(val):''}" oninput="exMark(document.getElementById('ex_${key}'),'${key}')">
+    ${helpHtml}</div>`;
+}
+function exSelChange(key){
+  const sel = document.getElementById('ex_'+key);
+  const outro = document.getElementById('ex_'+key+'_outro');
+  if (outro) outro.style.display = (sel.value === '__outro__') ? 'block' : 'none';
+  exMark(sel, key);
 }
 // campo numérico (com alerta de vital fora da faixa)
 function exNum(key, label, val, unit){
@@ -3925,7 +3937,13 @@ function exGetPreset(key){
 // lê o formulário revisado de volta para um objeto
 function collectExame(){
   const skipped = k => _exSkip.has(k);
-  const g = id => { if (skipped(id)) return ''; const el = document.getElementById('ex_'+id); return el ? String(el.value).trim() : ''; };
+  const g = id => {
+    if (skipped(id)) return '';
+    const el = document.getElementById('ex_'+id); if (!el) return '';
+    let v = String(el.value).trim();
+    if (v === '__outro__'){ const t = document.getElementById('ex_'+id+'_outro'); v = t ? String(t.value).trim() : ''; }
+    return v;
+  };
   const o = {};
   ['ncons','pup','cam','padr','mv','adv','vmodo','ritmo','aust','perf','edema','abd','rha','diet','urina','pele','lpp',
    'gcs','fio2','peep','vc','ppico','fr','spo2','fc','pas','pad','tax','du','saps3','peso','altura',
@@ -4027,8 +4045,9 @@ function exameToBlock(o){
   add('DIETA/NUTRICAO', o.diet);
   add('ASPECTO DA DIURESE', o.urina);
   add('DEBITO URINARIO', exHas(o.du)?o.du+' ML/H':'');
-  // CONTROLES E BALANCO DAS ULTIMAS 24 HORAS
+  // CONTROLES E BALANCO DAS ULTIMAS 24 HORAS — SOMENTE no DIURNO (não existe em noturno/admissão)
   const ctrl = [];
+  if (currentType === 'diurno') {
   if (o.bal_periodo === 'Período parcial')
     ctrl.push('PERIODO: ' + ((o.bal_ini||o.bal_fim) ? `${o.bal_ini||'?'} AS ${o.bal_fim||'?'}` : 'PARCIAL (informar horario)'));
   else if (o.bal_periodo)
@@ -4041,6 +4060,7 @@ function exameToBlock(o){
   if (exHas(o.perdas)) ctrl.push('DRENOS/SONDAS/OUTRAS PERDAS: ' + o.perdas);
   if (exHas(o.bh_sinal) || exHas(o.bh_vol)) ctrl.push('BALANCO HIDRICO: ' + (o.bh_sinal ? o.bh_sinal.toUpperCase() : '') + (exHas(o.bh_vol) ? ` ${o.bh_vol} ML` : '') );
   if (ctrl.length){ L.push('CONTROLES E BALANCO DAS ULTIMAS 24 HORAS:'); ctrl.forEach(c => L.push('  ' + c)); }
+  }
   add('PELE', o.pele);
   add('LESAO POR PRESSAO', o.lpp);
   add('PROFILAXIA GASTRICA', o.profilaxia_gastrica);
@@ -4164,6 +4184,16 @@ async function generateEvolution() {
     if (_exameParsed.altura && !document.getElementById('patAltura')?.value.trim()){
       const aEl = document.getElementById('patAltura'); if (aEl) aEl.value = _exameParsed.altura;
     }
+    if (_exameParsed.saps3 && !document.getElementById('patSaps').value.trim()){
+      document.getElementById('patSaps').value = _exameParsed.saps3;
+    }
+    // Setor (UTI I / UTI II): da extração ou inferido do texto/anexos
+    const _setorEl = document.getElementById('patSetor');
+    if (_setorEl && !_setorEl.value){
+      let s = (_exameParsed.setor || '').trim();
+      if (s !== 'UTI I' && s !== 'UTI II') s = inferSetorFromContent(fonte) || '';
+      if (s === 'UTI I' || s === 'UTI II') _setorEl.value = s;
+    }
     renderExameForm(_exameParsed);
     document.getElementById('examePanel').style.display = 'block';
     document.getElementById('examePanel').scrollIntoView({ behavior:'smooth', block:'start' });
@@ -4274,7 +4304,7 @@ ATENCAO — SEM FICHA DE EXAMES: nao existe ficha de exames laboratoriais salva 
 ${structuredBlock ? `========================================
 🩺 EXAME CLINICO ESTRUTURADO (REVISADO E CONFIRMADO PELO MEDICO — FONTE PRIORITARIA):
 Estes campos foram extraidos do texto e REVISADOS pelo medico. Use-os como a fonte AUTORITATIVA para montar a secao EXAME CLINICO (e os campos correspondentes: SEDACAO/ANALGESIA, BLOQUEADOR NEUROMUSCULAR, DROGAS VASOATIVAS, DISPOSITIVOS INVASIVOS, PROFILAXIAS, ANTIMICROBIANOS EM USO, NUTRICAO, ALERGIAS, CONTROLES E BALANCO DAS ULTIMAS 24 HORAS, JUSTIFICATIVA DE PERMANENCIA, DEMANDA FAMILIAR).
-Na secao CONTROLES E BALANCO DAS ULTIMAS 24 HORAS, usar os dados de periodo, temperatura/febre, escapes glicemicos, diurese, drenos/sondas/perdas e balanco hidrico exatamente como fornecidos; se o periodo for "24 horas", deixar claro "das 07h as 07h"; escape glicemico e somente glicemia capilar acima de 180.
+A secao CONTROLES E BALANCO DAS ULTIMAS 24 HORAS SO EXISTE NO DIURNO. No NOTURNO e na ADMISSAO, NAO incluir essa secao de forma alguma (nem balanco hidrico, nem diurese/controles). Quando ela existir (diurno), usar periodo, temperatura/febre, escapes glicemicos, diurese, drenos/sondas/perdas e balanco hidrico exatamente como fornecidos; se o periodo for "24 horas", deixar claro "das 07h as 07h"; escape glicemico e somente glicemia capilar acima de 180.
 REGRAS: reproduzir EXATAMENTE os valores que ESTAO neste bloco (ele tem PRIORIDADE para os campos que preenche); converter para o formato/secoes do modelo. Manter coerencia clinica (Regra 22).
 CRITICO — NAO PERDER DADOS: este bloco NAO e a unica fonte. Para os campos que estao AUSENTES/vazios aqui, voce DEVE BUSCAR a informacao nos DADOS BASE, nas NOVAS INFORMACOES e nos ANEXOS e preencher a evolucao com ela. NAO escreva [COMPLEMENTAR] só porque o campo esta vazio neste bloco — [COMPLEMENTAR] SOMENTE quando o dado NAO existir em NENHUMA fonte (bloco + texto + anexos). Ex: se o antimicrobiano/medicacao/antecedente/historia/dispositivo aparece nos dados base mas nao esta neste bloco, USAR o dos dados base. O bloco define os ACHADOS DO EXAME revisados; o resto do conteudo clinico vem de TODAS as fontes.
 IMPORTANTE — MEDICACOES POR OUTRAS VIAS: o bloco estruturado traz sobretudo as INFUSOES CONTINUAS. As secoes de medicacoes (SEDACAO/ANALGESIA, ANTIMICROBIANOS, PROFILAXIAS, MEDICACOES DE USO CONTINUO) devem COMBINAR o que vem aqui (infusoes IV continuas) COM as medicacoes por VIA ORAL (VO), SONDA (SNE/SNG/GTT) ou IM citadas nos DADOS BASE / NOVAS INFORMACOES — NAO descartar essas. Em especial, sedativos/hipnoticos/ansioliticos/antipsicoticos-sedativos e analgesicos por VO ou SNE DEVEM aparecer em SEDACAO/ANALGESIA com a VIA indicada (ver regra da secao SEDACAO/ANALGESIA).
@@ -6315,9 +6345,13 @@ async function saveEvolucao() {
 
 // Infere o setor (UTI I / UTI II) a partir da linha "UTI GERAL I/II" do texto da evolução
 function inferSetorFromContent(text) {
-  const m = (text || '').match(/UTI\s+GERAL\s+(II|I)\b/i);
-  if (!m) return '';
-  return m[1].toUpperCase() === 'II' ? 'UTI II' : 'UTI I';
+  const t = text || '';
+  // "UTI GERAL II", "UTI GERAL 2", "UTI II", "UTI 2", "CTI II" etc.
+  let m = t.match(/\b(?:U|C)TI\s+(?:GERAL\s+)?(II|2)\b/i);
+  if (m) return 'UTI II';
+  m = t.match(/\b(?:U|C)TI\s+(?:GERAL\s+)?(I|1)\b/i);
+  if (m) return 'UTI I';
+  return '';
 }
 
 // Extrai o leito do cabeçalho da evolução: "NOME: ... (LEITO: 9) CONVENIO: ..."
