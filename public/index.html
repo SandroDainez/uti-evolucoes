@@ -28,6 +28,28 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Tema escuro para controles nativos (opções de select, date picker, scrollbars) */
+  :root { color-scheme: dark; }
+
+  /* Opções de <select> sempre legíveis (fundo escuro + texto claro) */
+  select option, select optgroup {
+    background: #161d2a; /* var(--surface2) */
+    color: #e0eaf5;      /* var(--text) */
+  }
+
+  /* Preenchimento automático do navegador: não deixar a caixa branca com texto invisível */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: #e0eaf5 !important;      /* texto claro */
+    -webkit-box-shadow: 0 0 0 1000px #0a0e14 inset !important; /* fundo escuro (var(--bg)) */
+    caret-color: #e0eaf5;
+    transition: background-color 9999s ease-in-out 0s; /* evita o flash branco do autofill */
+  }
+
   body {
     font-family: 'Sora', sans-serif;
     background: var(--bg);
