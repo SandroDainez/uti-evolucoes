@@ -5,18 +5,14 @@ name: Apply abdome RHA integration
     branches:
       - fix/abdome-rha
 
-permissions:
-  contents: write
-
 jobs:
-  patch:
+  build-patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: fix/abdome-rha
-          fetch-depth: 0
-      - name: Patch RHA
+      - name: Gerar patch RHA
         shell: bash
         run: |
           set -euo pipefail
@@ -52,11 +48,8 @@ jobs:
               p.write_text(s,encoding='utf-8')
           PY
           node --check public/clinical-safety-v3.js
-      - name: Commit patch
-        run: |
-          if git diff --quiet; then exit 0; fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/clinical-safety-v3.js
-          git commit -m '[skip ci] fix: integra RHA ao bloco de abdome'
-          git push origin HEAD:fix/abdome-rha
+          grep -q "function moveRhaIntoAbdome" public/clinical-safety-v3.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clinical-safety-v3-rha
+          path: public/clinical-safety-v3.js
