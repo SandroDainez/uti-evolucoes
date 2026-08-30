@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/semiologia-v2.smoke.mjs",
-    "test:semiologia": "node tests/semiologia-v2.smoke.mjs"
+    "test": "node tests/semiologia-v2.smoke.mjs && node tests/clinical-pipeline-v2.smoke.mjs",
+    "test:semiologia": "node tests/semiologia-v2.smoke.mjs",
+    "test:clinical": "node tests/clinical-pipeline-v2.smoke.mjs"
   },
   "keywords": [],
   "author": "",
