@@ -217,7 +217,7 @@
     const rm={espontanea:'com resposta espontânea',verbal:'desperta/responde ao chamado verbal',toque:'responde ao toque',dor:'responde apenas a estímulo doloroso',sem:'sem resposta a estímulos'};
     const om={pte:'orientado em pessoa, tempo e espaço',tempo:'desorientado no tempo',espaco:'desorientado no espaço',pessoa:'desorientado quanto à pessoa',global:'com desorientação global'};
     const extras=[['coop','cooperativo'],['pcoop','pouco cooperativo'],['inat','com inatenção'],['lento','com respostas lentificadas'],['incoer','com discurso incoerente'],['flut','com flutuação do nível de consciência']].filter(([k])=>checked('sv2_ncons_'+k)).map(x=>x[1]);
-    return [em[val('sv2_ncons_estado')],rm[val('sv2_ncons_resp')],om[val('sv2_ncons_ori')],extras.join(', ')].filter(Boolean).join(', ');
+    const st=val('sv2_ncons_estado'); const response=st==='comatoso'?'sem resposta a estímulos':rm[val('sv2_ncons_resp')]; const orientation=(st==='comatoso'||st==='torporoso')?'':om[val('sv2_ncons_ori')]; return [em[st],response,orientation,extras.join(', ')].filter(Boolean).join(', ');
   }
   function syncPup(){
     if(val('sv2_pup_special')==='na') return 'Pupilas não avaliáveis';
@@ -262,7 +262,7 @@
   function syncPerf(){
     const parts=[]; const tecN=val('sv2_perf_tecn'), tec={lt2:'TEC <2 s','2a3':'TEC 2–3 s',gt3:'TEC >3 s'}; if(tecN) parts.push(`TEC ${tecN} s`); else if(tec[val('sv2_perf_tec')]) parts.push(tec[val('sv2_perf_tec')]);
     const temp={quentes:'extremidades quentes',normo:'extremidades normotérmicas',frias:'extremidades frias'}, cor={coradas:'coradas',palidas:'pálidas',cianoticas:'cianóticas',moteadas:'moteadas/marmóreas'}; if(temp[val('sv2_perf_temp')]) parts.push(temp[val('sv2_perf_temp')]); if(cor[val('sv2_perf_cor')]) parts.push(cor[val('sv2_perf_cor')]);
-    const pm={normal:'normal',dim:'diminuído',fil:'filiforme',aus:'ausente',dop:'detectável apenas ao Doppler'}; const pulses=[]; document.querySelectorAll('#sv2_perf_rows .sv2-list-row').forEach(r=>{ const i=r.dataset.row,t=val(`sv2_perf_pterr_${i}`),q=val(`sv2_perf_pqual_${i}`); if(t&&q) pulses.push(`pulso ${String(PULSE_LABEL[t]).toLowerCase()} ${pm[q]}`); }); if(pulses.length) parts.push(pulses.join(', '));
+    const pm={normal:'normal',dim:'diminuído',fil:'filiforme',aus:'ausente',dop:'detectável apenas ao Doppler'}; const pulseMap=new Map(); document.querySelectorAll('#sv2_perf_rows .sv2-list-row').forEach(r=>{ const i=r.dataset.row,t=val(`sv2_perf_pterr_${i}`),q=val(`sv2_perf_pqual_${i}`); if(t&&q) pulseMap.set(t,`pulso ${String(PULSE_LABEL[t]).toLowerCase()} ${pm[q]}`); }); const pulses=[...pulseMap.values()]; if(pulses.length) parts.push(pulses.join(', '));
     const isq=[['dor','dor'],['palidez','palidez'],['frialdade','frialdade'],['parestesia','parestesia'],['paresia','paresia/paralisia'],['cianose','cianose'],['moteamento','moteamento']].filter(([k])=>checked('sv2_perf_'+k)).map(x=>x[1]); if(isq.length) parts.push(`sinais associados: ${isq.join(', ')}`);
     return parts.join(', ');
   }
@@ -288,7 +288,7 @@
   function sync(key){
     const w=$('exf_'+key); if(!w) return; w.dataset.dirty='1'; const base=(syncers[key]&&syncers[key]())||''; const free=val(`sv2_${key}_free`); const phrase=[base,free].filter(Boolean).join(base&&free?'; ':''); const hidden=$('ex_'+key); if(hidden) hidden.value=phrase; const pv=$('sv2_preview_'+key); if(pv) pv.textContent=phrase||'Sem achado selecionado.'; const b=w.querySelector('.ex-badge'); if(b&&!w.classList.contains('ex-skipped')){ b.className='ex-badge '+(phrase?'ok':'miss'); b.textContent=phrase?'preenchido':'preencher'; }
   }
-  function syncFrom(id){ const e=$(id); if(!e) return; const w=e.closest('.sv2-field'); if(w) sync(w.dataset.sv2Key); else syncAdditional(); }
+  function syncFrom(id){ const e=$(id); if(!e) return; const w=e.closest('.sv2-field'); if(!w) return; if(w.dataset.sv2Key) sync(w.dataset.sv2Key); else if(w.dataset.extraKey) syncAdditional(); }
   function clearInitial(key){ const w=$('exf_'+key); if(!w)return; w.dataset.initial=''; w.dataset.dirty='1'; const c=w.querySelector('.sv2-current'); if(c)c.remove(); const h=$('ex_'+key); if(h)h.value=''; sync(key); }
   function nextIndex(container){ let max=-1; container.querySelectorAll('[data-row]').forEach(e=>{ max=Math.max(max,parseInt(e.dataset.row,10)||0); }); return max+1; }
   function addAdv(){ const c=$('sv2_adv_rows'); if(!c)return; c.insertAdjacentHTML('beforeend',advRow(nextIndex(c))); sync('adv'); }
