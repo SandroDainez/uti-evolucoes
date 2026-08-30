@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   patch:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,11 +20,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python3 <<'PY'
           from pathlib import Path
-          p=Path('public/clinical-safety-v3.js')
-          s=p.read_text(encoding='utf-8')
-          old="""  function wrapRenderExame(){
+          p = Path('public/clinical-safety-v3.js')
+          s = p.read_text(encoding='utf-8')
+          if 'function moveRhaIntoAbdome()' not in s:
+              old = """  function wrapRenderExame(){
     const legacy=window.renderExameForm; if(typeof legacy!=='function'||legacy.__safetyV3)return;
     const wrapped=function(){const r=legacy.apply(this,arguments);setTimeout(improveDietField,0);return r;};
     wrapped.__safetyV3=true;window.renderExameForm=wrapped;
@@ -34,7 +34,7 @@ jobs:
   function install(){ wrapSystemPrompt(); wrapPostProcess(); wrapRenderExame(); setTimeout(improveDietField,50); }
   window.ClinicalSafetyV3={POLICY,auditEvolution,install};
 """
-          new="""  function moveRhaIntoAbdome(){
+              new = """  function moveRhaIntoAbdome(){
     const abd=document.getElementById('exf_abd');
     const rha=document.getElementById('exf_rha');
     if(!abd||!rha||rha.dataset.rhaInAbdome==='1') return;
@@ -59,17 +59,17 @@ jobs:
   function install(){ wrapSystemPrompt(); wrapPostProcess(); wrapRenderExame(); setTimeout(()=>{improveDietField();moveRhaIntoAbdome();},50); }
   window.ClinicalSafetyV3={POLICY,auditEvolution,moveRhaIntoAbdome,install};
 """
-          if old not in s:
-              raise SystemExit('bloco alvo não encontrado')
-          s=s.replace(old,new,1)
-          p.write_text(s,encoding='utf-8')
+              if old not in s:
+                  raise SystemExit('bloco alvo nao encontrado')
+              s = s.replace(old, new, 1)
+              p.write_text(s, encoding='utf-8')
           PY
           node --check public/clinical-safety-v3.js
-      - name: Commit
+      - name: Commit patch
         run: |
           if git diff --quiet; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add public/clinical-safety-v3.js
-          git commit -m 'fix: integra RHA ao bloco de abdome'
+          git commit -m '[skip ci] fix: integra RHA ao bloco de abdome'
           git push origin HEAD:fix/abdome-rha
