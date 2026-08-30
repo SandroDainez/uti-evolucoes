@@ -12,16 +12,13 @@ on:
       - 'package.json'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'push' && github.ref_name || github.head_ref }}
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -29,43 +26,3 @@ jobs:
         run: node --check public/semiologia-v2.js
       - name: Rodar smoke test
         run: npm test
-      - name: Aplicar correcoes finais de coerencia
-        if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('public/semiologia-v2.js')
-          s=p.read_text(encoding='utf-8')
-
-          replacements = [
-          (
-          "function syncFrom(id){ const e=$(id); if(!e) return; const w=e.closest('.sv2-field'); if(w) sync(w.dataset.sv2Key); else syncAdditional(); }",
-          "function syncFrom(id){ const e=$(id); if(!e) return; const w=e.closest('.sv2-field'); if(!w) return; if(w.dataset.sv2Key) sync(w.dataset.sv2Key); else if(w.dataset.extraKey) syncAdditional(); }"
-          ),
-          (
-          "    return [em[val('sv2_ncons_estado')],rm[val('sv2_ncons_resp')],om[val('sv2_ncons_ori')],extras.join(', ')].filter(Boolean).join(', ');",
-          "    const st=val('sv2_ncons_estado'); const response=st==='comatoso'?'sem resposta a estímulos':rm[val('sv2_ncons_resp')]; const orientation=(st==='comatoso'||st==='torporoso')?'':om[val('sv2_ncons_ori')]; return [em[st],response,orientation,extras.join(', ')].filter(Boolean).join(', ');"
-          ),
-          (
-          "    const pm={normal:'normal',dim:'diminuído',fil:'filiforme',aus:'ausente',dop:'detectável apenas ao Doppler'}; const pulses=[]; document.querySelectorAll('#sv2_perf_rows .sv2-list-row').forEach(r=>{ const i=r.dataset.row,t=val(`sv2_perf_pterr_${i}`),q=val(`sv2_perf_pqual_${i}`); if(t&&q) pulses.push(`pulso ${String(PULSE_LABEL[t]).toLowerCase()} ${pm[q]}`); }); if(pulses.length) parts.push(pulses.join(', '));",
-          "    const pm={normal:'normal',dim:'diminuído',fil:'filiforme',aus:'ausente',dop:'detectável apenas ao Doppler'}; const pulseMap=new Map(); document.querySelectorAll('#sv2_perf_rows .sv2-list-row').forEach(r=>{ const i=r.dataset.row,t=val(`sv2_perf_pterr_${i}`),q=val(`sv2_perf_pqual_${i}`); if(t&&q) pulseMap.set(t,`pulso ${String(PULSE_LABEL[t]).toLowerCase()} ${pm[q]}`); }); const pulses=[...pulseMap.values()]; if(pulses.length) parts.push(pulses.join(', '));"
-          )]
-
-          changed=False
-          for old,new in replacements:
-              if old in s:
-                  s=s.replace(old,new,1); changed=True
-              elif new not in s:
-                  raise SystemExit('âncora esperada não encontrada')
-          if changed:
-              p.write_text(s,encoding='utf-8')
-          PY
-          node --check public/semiologia-v2.js
-          if git diff --quiet; then exit 0; fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/semiologia-v2.js
-          git commit -m 'fix: melhora coerencia e sincronizacao da semiologia v2'
-          git push origin HEAD:refactor/exame-fisico-semiologia
