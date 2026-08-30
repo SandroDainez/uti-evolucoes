@@ -28,6 +28,38 @@ assert.equal(globalThis.collectExame.__sv2, true, 'collectExame legado deve ser 
 // Campo não migrado continua usando o renderizador legado.
 assert.match(globalThis.exSel('rha','RHA',[],''), /data-legacy="rha"/);
 
+// Campos migrados expõem os construtores atômicos esperados.
+const mv = globalThis.exSel('mv','Murmúrio vesicular',[],'');
+assert.match(mv, /sv2_mv_int/);
+assert.match(mv, /sv2_mv_loc/);
+
+const pup = globalThis.exSel('pup','Pupilas',[], '');
+assert.match(pup, /sv2_pup_od/);
+assert.match(pup, /Discoria à direita/);
+assert.match(pup, /sv2_pup_reac_lado/);
+
+const adv = globalThis.exSel('adv','Ruídos adventícios',[], '');
+assert.match(adv, /Roncos/);
+assert.match(adv, /Sibilos/);
+assert.match(adv, /Crepitações/);
+assert.match(adv, /\+ adicionar achado/);
+
+const perf = globalThis.exSel('perf','Perfusão',[], '');
+assert.match(perf, /Tibial posterior D/);
+assert.match(perf, /Pedioso E/);
+assert.match(perf, /Apenas ao Doppler/);
+
+const lpp = globalThis.exSel('lpp','Lesão por pressão',[], '');
+assert.match(lpp, /Calcâneo D/);
+assert.match(lpp, /Não classificável/);
+assert.match(lpp, /\+ adicionar lesão/);
+
+// Um achado legado extraído é preservado até o médico optar por reconstruí-lo.
+const legado = globalThis.exSel('mv','Murmúrio vesicular',[],'Reduzido à esquerda');
+assert.match(legado, /value="Reduzido à esquerda"/);
+assert.match(legado, /Texto atual:/);
+assert.match(legado, /reconstruir/);
+
 // A coleta legada continua preservando seus campos mesmo sem painel montado.
 const collected = globalThis.collectExame();
 assert.equal(collected.mv, 'Presente e simétrico');
