@@ -5,6 +5,7 @@ globalThis.window = globalThis;
 globalThis.document = {
   readyState: 'complete',
   getElementById() { return null; },
+  querySelectorAll() { return []; },
   createElement() { return { id:'', textContent:'', style:{}, appendChild(){} }; },
   head: { appendChild(){} },
   addEventListener() {}
