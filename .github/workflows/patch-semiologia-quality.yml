@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   patch:
-    if: github.actor != 'github-actions[bot]'
+    if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
 
           old="function syncFrom(id){ const e=$(id); if(!e) return; const w=e.closest('.sv2-field'); if(w) sync(w.dataset.sv2Key); else syncAdditional(); }"
           new="function syncFrom(id){ const e=$(id); if(!e) return; const w=e.closest('.sv2-field'); if(!w) return; if(w.dataset.sv2Key) sync(w.dataset.sv2Key); else if(w.dataset.extraKey) syncAdditional(); }"
-          if old not in s: raise SystemExit('âncora syncFrom não encontrada')
+          if old not in s: raise SystemExit('ancora syncFrom nao encontrada')
           s=s.replace(old,new,1)
 
           old="""    const em={alerta:'alerta e vígil',sonolento:'sonolento',letargico:'letárgico',obnubilado:'obnubilado',confuso:'confuso',agitado:'agitado',torporoso:'torporoso',comatoso:'comatoso/não responsivo'};
@@ -44,12 +44,12 @@ jobs:
     const orientation = (st==='comatoso' || st==='torporoso') ? '' : om[val('sv2_ncons_ori')];
     const extras=[['coop','cooperativo'],['pcoop','pouco cooperativo'],['inat','com inatenção'],['lento','com respostas lentificadas'],['incoer','com discurso incoerente'],['flut','com flutuação do nível de consciência']].filter(([k])=>checked('sv2_ncons_'+k)).map(x=>x[1]);
     return [em[st],response,orientation,extras.join(', ')].filter(Boolean).join(', ');"""
-          if old not in s: raise SystemExit('âncora consciência não encontrada')
+          if old not in s: raise SystemExit('ancora consciencia nao encontrada')
           s=s.replace(old,new,1)
 
           old="""    const pm={normal:'normal',dim:'diminuído',fil:'filiforme',aus:'ausente',dop:'detectável apenas ao Doppler'}; const pulses=[]; document.querySelectorAll('#sv2_perf_rows .sv2-list-row').forEach(r=>{ const i=r.dataset.row,t=val(`sv2_perf_pterr_${i}`),q=val(`sv2_perf_pqual_${i}`); if(t&&q) pulses.push(`pulso ${String(PULSE_LABEL[t]).toLowerCase()} ${pm[q]}`); }); if(pulses.length) parts.push(pulses.join(', '));"""
           new="""    const pm={normal:'normal',dim:'diminuído',fil:'filiforme',aus:'ausente',dop:'detectável apenas ao Doppler'}; const pulseMap=new Map(); document.querySelectorAll('#sv2_perf_rows .sv2-list-row').forEach(r=>{ const i=r.dataset.row,t=val(`sv2_perf_pterr_${i}`),q=val(`sv2_perf_pqual_${i}`); if(t&&q) pulseMap.set(t,`pulso ${String(PULSE_LABEL[t]).toLowerCase()} ${pm[q]}`); }); const pulses=[...pulseMap.values()]; if(pulses.length) parts.push(pulses.join(', '));"""
-          if old not in s: raise SystemExit('âncora pulsos não encontrada')
+          if old not in s: raise SystemExit('ancora pulsos nao encontrada')
           s=s.replace(old,new,1)
 
           p.write_text(s,encoding='utf-8')
