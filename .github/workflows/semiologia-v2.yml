@@ -1,0 +1,27 @@
+name: Semiologia v2 smoke
+
+on:
+  push:
+    branches:
+      - refactor/exame-fisico-semiologia
+  pull_request:
+    paths:
+      - 'public/semiologia-v2.js'
+      - 'public/index.html'
+      - 'public/index-legacy.html'
+      - 'tests/semiologia-v2.smoke.mjs'
+      - 'package.json'
+      - 'vercel.json'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verificar sintaxe
+        run: node --check public/semiologia-v2.js
+      - name: Rodar smoke test
+        run: npm test
