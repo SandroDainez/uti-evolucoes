@@ -1,0 +1,41 @@
+name: Semiologia e pipeline clínico v2
+
+on:
+  push:
+    branches:
+      - refactor/exame-fisico-semiologia
+  pull_request:
+    paths:
+      - 'public/semiologia-v2.js'
+      - 'public/clinical-pipeline-v2.js'
+      - 'public/clinical-safety-v3.js'
+      - 'public/attachments-v2.js'
+      - 'public/index.html'
+      - 'api/parse-exame-v2.js'
+      - 'api/parse-clinical-delta.js'
+      - 'tests/semiologia-v2.smoke.mjs'
+      - 'tests/clinical-pipeline-v2.smoke.mjs'
+      - 'tests/clinical-safety-v3.smoke.mjs'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verificar sintaxe
+        run: |
+          node --check public/semiologia-v2.js
+          node --check public/clinical-pipeline-v2.js
+          node --check public/clinical-safety-v3.js
+          node --check public/attachments-v2.js
+          node --check api/parse-exame-v2.js
+          node --check api/parse-clinical-delta.js
+      - name: Rodar smoke tests
+        run: npm test
