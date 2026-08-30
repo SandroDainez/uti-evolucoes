@@ -20,23 +20,12 @@
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
         { "key": "Pragma", "value": "no-cache" }
       ]
-    },
-    {
-      "source": "/index-legacy.html",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
-      ]
-    },
-    {
-      "source": "/semiologia-v2.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store, max-age=0" }
-      ]
     }
   ],
   "rewrites": [
-    { "source": "/index-legacy.html", "destination": "/index-legacy.html" },
-    { "source": "/semiologia-v2.js", "destination": "/semiologia-v2.js" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
