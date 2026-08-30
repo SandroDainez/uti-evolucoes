@@ -168,13 +168,29 @@ REGRAS CLINICAS OPERACIONAIS ADICIONAIS — OBRIGATORIAS:
       vals.forEach(v=>{ if(!existing.has(v)){const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);} });
     }
   }
+  function moveRhaIntoAbdome(){
+    const abd=document.getElementById('exf_abd');
+    const rha=document.getElementById('exf_rha');
+    if(!abd||!rha||rha.dataset.rhaInAbdome==='1') return;
+    const body=abd.querySelector('.sv2-body');
+    if(!body) return;
+    rha.dataset.rhaInAbdome='1';
+    rha.classList.add('sv2-rha-nested');
+    rha.style.margin='8px 0 0';
+    rha.style.border='1px solid rgba(255,255,255,.08)';
+    rha.style.background='rgba(255,255,255,.018)';
+    body.appendChild(rha);
+    const help=abd.querySelector('.sv2-help');
+    if(help && /RHA permanecem em campo próprio/i.test(help.textContent||'')) help.textContent='Inclui ruídos hidroaéreos (RHA).';
+  }
+
   function wrapRenderExame(){
     const legacy=window.renderExameForm; if(typeof legacy!=='function'||legacy.__safetyV3)return;
-    const wrapped=function(){const r=legacy.apply(this,arguments);setTimeout(improveDietField,0);return r;};
+    const wrapped=function(){const r=legacy.apply(this,arguments);setTimeout(()=>{improveDietField();moveRhaIntoAbdome();},0);return r;};
     wrapped.__safetyV3=true;window.renderExameForm=wrapped;
   }
 
-  function install(){ wrapSystemPrompt(); wrapPostProcess(); wrapRenderExame(); setTimeout(improveDietField,50); }
-  window.ClinicalSafetyV3={POLICY,auditEvolution,install};
+  function install(){ wrapSystemPrompt(); wrapPostProcess(); wrapRenderExame(); setTimeout(()=>{improveDietField();moveRhaIntoAbdome();},50); }
+  window.ClinicalSafetyV3={POLICY,auditEvolution,moveRhaIntoAbdome,install};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
