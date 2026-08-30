@@ -1,0 +1,51 @@
+name: Apply Semiologia v2 integration
+
+on:
+  push:
+    branches:
+      - refactor/exame-fisico-semiologia
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/exame-fisico-semiologia
+          fetch-depth: 0
+      - name: Restaurar index original e inserir camada v2
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git show origin/main:public/index.html > public/index.html
+          git show origin/main:vercel.json > vercel.json
+          rm -f public/index-legacy.html
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='<script src="/semiologia-v2.js?v=2"></script>'
+          if marker not in s:
+              i=s.lower().rfind('</body>')
+              if i < 0:
+                  raise SystemExit('index.html sem </body>')
+              s=s[:i]+marker+'\n'+s[i:]
+              p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit da integração mínima
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet && git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/index.html public/index-legacy.html vercel.json || true
+          git commit -m 'refactor: integra semiologia v2 diretamente no index'
+          git push origin HEAD:refactor/exame-fisico-semiologia
