@@ -1,4 +1,4 @@
-name: Semiologia v2 smoke
+name: Semiologia e pipeline clínico v2
 
 on:
   push:
@@ -7,8 +7,12 @@ on:
   pull_request:
     paths:
       - 'public/semiologia-v2.js'
+      - 'public/clinical-pipeline-v2.js'
       - 'public/index.html'
+      - 'api/parse-exame-v2.js'
+      - 'api/parse-clinical-delta.js'
       - 'tests/semiologia-v2.smoke.mjs'
+      - 'tests/clinical-pipeline-v2.smoke.mjs'
       - 'package.json'
 
 permissions:
@@ -23,6 +27,10 @@ jobs:
         with:
           node-version: 22
       - name: Verificar sintaxe
-        run: node --check public/semiologia-v2.js
-      - name: Rodar smoke test
+        run: |
+          node --check public/semiologia-v2.js
+          node --check public/clinical-pipeline-v2.js
+          node --check api/parse-exame-v2.js
+          node --check api/parse-clinical-delta.js
+      - name: Rodar smoke tests
         run: npm test
