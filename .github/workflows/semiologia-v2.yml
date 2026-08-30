@@ -8,6 +8,7 @@ on:
     paths:
       - 'public/semiologia-v2.js'
       - 'public/clinical-pipeline-v2.js'
+      - 'public/attachments-v2.js'
       - 'public/index.html'
       - 'api/parse-exame-v2.js'
       - 'api/parse-clinical-delta.js'
@@ -30,6 +31,7 @@ jobs:
         run: |
           node --check public/semiologia-v2.js
           node --check public/clinical-pipeline-v2.js
+          node --check public/attachments-v2.js
           node --check api/parse-exame-v2.js
           node --check api/parse-clinical-delta.js
       - name: Rodar smoke tests
