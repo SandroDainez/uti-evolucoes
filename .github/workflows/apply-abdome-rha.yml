@@ -22,23 +22,25 @@ jobs:
           s=p.read_text(encoding='utf-8')
           if 'function moveRhaIntoAbdome()' not in s:
               marker='  function wrapRenderExame(){'
-              fn="""  function moveRhaIntoAbdome(){
-    const abd=document.getElementById('exf_abd');
-    const rha=document.getElementById('exf_rha');
-    if(!abd||!rha||rha.dataset.rhaInAbdome==='1') return;
-    const body=abd.querySelector('.sv2-body');
-    if(!body) return;
-    rha.dataset.rhaInAbdome='1';
-    rha.classList.add('sv2-rha-nested');
-    rha.style.margin='8px 0 0';
-    rha.style.border='1px solid rgba(255,255,255,.08)';
-    rha.style.background='rgba(255,255,255,.018)';
-    body.appendChild(rha);
-    const help=abd.querySelector('.sv2-help');
-    if(help && /RHA permanecem em campo próprio/i.test(help.textContent||'')) help.textContent='Inclui ruídos hidroaéreos (RHA).';
-  }
-
-"""
+              lines=[
+                  "  function moveRhaIntoAbdome(){",
+                  "    const abd=document.getElementById('exf_abd');",
+                  "    const rha=document.getElementById('exf_rha');",
+                  "    if(!abd||!rha||rha.dataset.rhaInAbdome==='1') return;",
+                  "    const body=abd.querySelector('.sv2-body');",
+                  "    if(!body) return;",
+                  "    rha.dataset.rhaInAbdome='1';",
+                  "    rha.classList.add('sv2-rha-nested');",
+                  "    rha.style.margin='8px 0 0';",
+                  "    rha.style.border='1px solid rgba(255,255,255,.08)';",
+                  "    rha.style.background='rgba(255,255,255,.018)';",
+                  "    body.appendChild(rha);",
+                  "    const help=abd.querySelector('.sv2-help');",
+                  "    if(help && /RHA permanecem em campo próprio/i.test(help.textContent||'')) help.textContent='Inclui ruídos hidroaéreos (RHA).';",
+                  "  }",
+                  ""
+              ]
+              fn='\n'.join(lines)+'\n'
               if marker not in s:
                   raise SystemExit('marker wrapRenderExame nao encontrado')
               s=s.replace(marker,fn+marker,1)
