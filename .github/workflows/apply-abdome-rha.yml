@@ -5,9 +5,58 @@ name: Apply abdome RHA integration
     branches:
       - fix/abdome-rha
 
+permissions:
+  contents: write
+
 jobs:
-  smoke:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo workflow-ok
+        with:
+          ref: fix/abdome-rha
+          fetch-depth: 0
+      - name: Patch RHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('public/clinical-safety-v3.js')
+          s=p.read_text(encoding='utf-8')
+          if 'function moveRhaIntoAbdome()' not in s:
+              marker='  function wrapRenderExame(){'
+              fn="""  function moveRhaIntoAbdome(){
+    const abd=document.getElementById('exf_abd');
+    const rha=document.getElementById('exf_rha');
+    if(!abd||!rha||rha.dataset.rhaInAbdome==='1') return;
+    const body=abd.querySelector('.sv2-body');
+    if(!body) return;
+    rha.dataset.rhaInAbdome='1';
+    rha.classList.add('sv2-rha-nested');
+    rha.style.margin='8px 0 0';
+    rha.style.border='1px solid rgba(255,255,255,.08)';
+    rha.style.background='rgba(255,255,255,.018)';
+    body.appendChild(rha);
+    const help=abd.querySelector('.sv2-help');
+    if(help && /RHA permanecem em campo próprio/i.test(help.textContent||'')) help.textContent='Inclui ruídos hidroaéreos (RHA).';
+  }
+
+"""
+              if marker not in s:
+                  raise SystemExit('marker wrapRenderExame nao encontrado')
+              s=s.replace(marker,fn+marker,1)
+              s=s.replace("const wrapped=function(){const r=legacy.apply(this,arguments);setTimeout(improveDietField,0);return r;};","const wrapped=function(){const r=legacy.apply(this,arguments);setTimeout(()=>{improveDietField();moveRhaIntoAbdome();},0);return r;};",1)
+              s=s.replace("function install(){ wrapSystemPrompt(); wrapPostProcess(); wrapRenderExame(); setTimeout(improveDietField,50); }","function install(){ wrapSystemPrompt(); wrapPostProcess(); wrapRenderExame(); setTimeout(()=>{improveDietField();moveRhaIntoAbdome();},50); }",1)
+              s=s.replace("window.ClinicalSafetyV3={POLICY,auditEvolution,install};","window.ClinicalSafetyV3={POLICY,auditEvolution,moveRhaIntoAbdome,install};",1)
+              p.write_text(s,encoding='utf-8')
+          PY
+          node --check public/clinical-safety-v3.js
+      - name: Commit patch
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/clinical-safety-v3.js
+          git commit -m '[skip ci] fix: integra RHA ao bloco de abdome'
+          git push origin HEAD:fix/abdome-rha
